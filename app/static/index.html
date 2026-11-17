@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinguaFlow | Traductor Inteligente en Tiempo Real</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20width=%22100%22%20height=%22100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>">
+</head>
+<body class="theme-dark">
+  <div class="app-container">
+    <!-- Header / Navbar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>LinguaFlow</h1>
+          <span class="badge-tag">AI Real-Time</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" id="mainTabs">
+        <button class="tab-btn active" data-tab="text-tab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+          <span>Texto</span>
+        </button>
+        <button class="tab-btn" data-tab="voice-tab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span>Voz en Vivo</span>
+        </button>
+        <button class="tab-btn" data-tab="docs-tab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Documentos</span>
+        </button>
+        <button class="tab-btn" data-tab="history-tab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Historial</span>
+        </button>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="ws-status" id="wsStatusBadge" title="Estado de la conexión en tiempo real">
+          <span class="status-dot"></span>
+          <span class="status-text">Tiempo Real</span>
+        </div>
+        <button class="icon-btn theme-toggle" id="themeToggleBtn" title="Cambiar tema">
+          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ============================================== -->
+      <!-- TAB 1: TEXT-TO-TEXT TRANSLATION                -->
+      <!-- ============================================== -->
+      <section class="tab-pane active" id="text-tab">
+        <div class="panel-header-bar">
+          <div class="lang-controls">
+            <div class="lang-select-group">
+              <label for="textSourceLang">De:</label>
+              <select id="textSourceLang" class="lang-dropdown">
+                <option value="auto">Detectar idioma automáticamente</option>
+                <!-- Opciones cargadas dinámicamente -->
+              </select>
+              <span class="detected-badge hidden" id="detectedLangTag">Detectado: Español</span>
+            </div>
+
+            <button class="swap-lang-btn" id="swapLangsBtn" title="Intercambiar idiomas">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+            </button>
+
+            <div class="lang-select-group">
+              <label for="textTargetLang">A:</label>
+              <select id="textTargetLang" class="lang-dropdown">
+                <!-- Opciones cargadas dinámicamente -->
+              </select>
+            </div>
+          </div>
+
+          <div class="quick-lang-pills" id="quickLangPills">
+            <button class="pill" data-lang="en">Inglés</button>
+            <button class="pill" data-lang="es">Español</button>
+            <button class="pill" data-lang="fr">Francés</button>
+            <button class="pill" data-lang="de">Alemán</button>
+            <button class="pill" data-lang="pt">Portugués</button>
+          </div>
+        </div>
+
+        <div class="translation-grid">
+          <!-- Cuadro de Texto de Origen -->
+          <div class="card editor-card source-card">
+            <div class="editor-header">
+              <span class="card-title">Texto original</span>
+              <button class="icon-subtle-btn" id="clearTextBtn" title="Limpiar texto">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+            <textarea id="sourceText" placeholder="Escribe o pega texto aquí... Se traducirá automáticamente mientras escribes." spellcheck="true"></textarea>
+            <div class="editor-footer">
+              <div class="char-count"><span id="sourceCharCount">0</span> caracteres</div>
+              <div class="footer-actions">
+                <button class="btn-tool" id="listenSourceBtn" title="Escuchar pronunciación original">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  <span>Escuchar</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cuadro de Texto Traducido -->
+          <div class="card editor-card target-card">
+            <div class="editor-header">
+              <span class="card-title">Traducción</span>
+              <div class="translating-indicator hidden" id="translatingIndicator">
+                <span class="spinner-sm"></span> Traduciendo...
+              </div>
+            </div>
+            <textarea id="targetText" placeholder="La traducción aparecerá aquí instantáneamente..." readonly></textarea>
+            <div class="editor-footer">
+              <div class="char-count"><span id="targetCharCount">0</span> caracteres</div>
+              <div class="footer-actions">
+                <button class="btn-tool" id="listenTargetBtn" title="Escuchar con voz natural (TTS)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  <span>Escuchar</span>
+                </button>
+                <button class="btn-tool" id="copyTargetBtn" title="Copiar traducción">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copiar</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 2: LIVE SPEECH & AUDIO (STT & TTS)         -->
+      <!-- ============================================== -->
+      <section class="tab-pane" id="voice-tab">
+        <div class="voice-layout">
+          <div class="voice-controls-panel card">
+            <div class="voice-hero">
+              <div class="mic-orb-container">
+                <button class="mic-orb" id="micRecordBtn" title="Presiona para hablar">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                </button>
+                <div class="pulse-ring"></div>
+              </div>
+              <h2 id="voiceStatusText">Presiona el micrófono para hablar</h2>
+              <p class="voice-subtext">Tu voz será transcrita y traducida simultáneamente en tiempo real.</p>
+
+              <!-- Visualizador de audio / ondas -->
+              <div class="wave-visualizer hidden" id="audioWaveVisualizer">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <div class="voice-settings-row">
+              <div class="voice-lang-box">
+                <label>Tu idioma (hablado):</label>
+                <select id="voiceSourceLang" class="lang-dropdown"></select>
+              </div>
+              <div class="voice-lang-box">
+                <label>Idioma destino:</label>
+                <select id="voiceTargetLang" class="lang-dropdown"></select>
+              </div>
+              <div class="voice-toggle-box">
+                <label class="switch-label">
+                  <input type="checkbox" id="autoSpeakToggle" checked>
+                  <span class="slider"></span>
+                  <span class="switch-text">Auto-reproducir traducción (TTS)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="voice-results-grid">
+            <!-- Transcripción en vivo -->
+            <div class="card voice-result-card">
+              <div class="voice-card-header">
+                <div class="badge-source">Transcripción (Tu Voz)</div>
+                <button class="icon-subtle-btn" id="clearVoiceBtn" title="Limpiar">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+              <div class="voice-content-box" id="voiceTranscriptBox">
+                <span class="placeholder-italic">Las palabras que pronuncies aparecerán aquí en vivo...</span>
+              </div>
+            </div>
+
+            <!-- Traducción simultánea -->
+            <div class="card voice-result-card">
+              <div class="voice-card-header">
+                <div class="badge-target">Traducción Simultánea</div>
+                <div class="voice-header-actions">
+                  <button class="btn-tool-sm" id="speakVoiceResultBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    <span>Escuchar</span>
+                  </button>
+                  <button class="btn-tool-sm" id="copyVoiceResultBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <span>Copiar</span>
+                  </button>
+                </div>
+              </div>
+              <div class="voice-content-box highlight" id="voiceTranslationBox">
+                <span class="placeholder-italic">La traducción inmediata de tu voz aparecerá aquí...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 3: DOCUMENT TRANSLATION                    -->
+      <!-- ============================================== -->
+      <section class="tab-pane" id="docs-tab">
+        <div class="docs-layout">
+          <div class="card docs-upload-card">
+            <div class="docs-header">
+              <h2>Traducción Integral de Documentos</h2>
+              <p>Sube archivos en formato PDF, Word (.docx) o Texto (.txt) para traducir todo su contenido manteniendo la estructura.</p>
+            </div>
+
+            <!-- Drag and Drop Zone -->
+            <div class="drop-zone" id="documentDropZone">
+              <input type="file" id="docFileInput" accept=".pdf,.docx,.doc,.txt,.md" hidden>
+              <div class="drop-zone-content">
+                <div class="upload-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <div class="drop-text">
+                  <span class="drop-highlight">Haz clic para subir</span> o arrastra y suelta tu archivo aquí
+                </div>
+                <div class="drop-hint">Formatos soportados: PDF, DOCX, TXT (Hasta 15 MB)</div>
+              </div>
+            </div>
+
+            <!-- Archivo Seleccionado Preview -->
+            <div class="selected-file-card hidden" id="selectedFileCard">
+              <div class="file-icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="file-info">
+                <div class="file-name" id="fileNameDisplay">documento.pdf</div>
+                <div class="file-size" id="fileSizeDisplay">1.2 MB</div>
+              </div>
+              <button class="remove-file-btn" id="removeFileBtn" title="Quitar archivo">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div class="docs-action-bar">
+              <div class="docs-lang-group">
+                <label>Traducir a:</label>
+                <select id="docTargetLang" class="lang-dropdown"></select>
+              </div>
+              <button class="btn-primary" id="startDocTranslateBtn" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Comenzar Traducción</span>
+              </button>
+            </div>
+
+            <!-- Barra de Progreso -->
+            <div class="progress-container hidden" id="docProgressBarContainer">
+              <div class="progress-label">
+                <span id="docProgressText">Extrayendo texto y procesando...</span>
+                <span id="docProgressPercent">45%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar" id="docProgressBar"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resultados del Documento Traducido -->
+          <div class="card doc-result-card hidden" id="docResultCard">
+            <div class="doc-result-header">
+              <div class="result-title">
+                <div class="success-icon">✓</div>
+                <div>
+                  <h3>Traducción Completada</h3>
+                  <p id="docResultSubtitle">El documento ha sido traducido con éxito conservando su formato.</p>
+                </div>
+              </div>
+              <a class="btn-download" id="docDownloadBtn" href="#" download>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Descargar Archivo Traducido</span>
+              </a>
+            </div>
+
+            <div class="doc-preview-grid">
+              <div class="preview-box">
+                <h4>Vista previa original:</h4>
+                <div class="preview-content" id="docOriginalPreview"></div>
+              </div>
+              <div class="preview-box">
+                <h4>Vista previa traducida:</h4>
+                <div class="preview-content highlight" id="docTranslatedPreview"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 4: HISTORY                                 -->
+      <!-- ============================================== -->
+      <section class="tab-pane" id="history-tab">
+        <div class="history-layout">
+          <div class="history-header">
+            <div>
+              <h2>Historial Reciente</h2>
+              <p>Tus últimas traducciones guardadas en tu sesión.</p>
+            </div>
+            <button class="btn-secondary" id="clearAllHistoryBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Borrar Historial</span>
+            </button>
+          </div>
+
+          <div class="history-list" id="historyListContainer">
+            <!-- Items generados dinámicamente -->
+            <div class="history-empty" id="historyEmptyState">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <p>Aún no tienes traducciones recientes.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>LinguaFlow v1.0.0 &bull; Arquitectura con FastAPI, WebSockets y Motores de IA</span>
+    </footer>
+  </div>
+
+  <!-- Contenedor de Notificaciones Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Audio Player oculto para TTS -->
+  <audio id="ttsAudioPlayer" class="hidden"></audio>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
