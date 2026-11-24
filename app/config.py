@@ -12,6 +12,12 @@ PORT = int(os.environ.get("PORT", 8000))
 HOST = os.environ.get("HOST", "0.0.0.0")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "production")
 
+# Conexión a Base de Datos (PostgreSQL en la Nube / SQLite en local)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    # Normalización para compatibilidad con librerías modernas de Python
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Asegurar existencia del directorio de uploads
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

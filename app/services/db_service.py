@@ -1,62 +1,136 @@
+import os
 import sqlite3
 import hashlib
 import secrets
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from app.config import DB_PATH
+from contextlib import contextmanager
+
+from app.config import DB_PATH, DATABASE_URL
+
+# Detección de driver PostgreSQL
+try:
+    import psycopg2
+    import psycopg2.extras
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
 
 logger = logging.getLogger("linguaflow.database")
 
 class DatabaseService:
-    def __init__(self, db_path=DB_PATH):
+    def __init__(self, db_path=DB_PATH, database_url=DATABASE_URL):
         self.db_path = str(db_path)
+        self.database_url = database_url
+        self.is_postgres = bool(
+            self.database_url 
+            and ("postgres://" in self.database_url or "postgresql://" in self.database_url) 
+            and PSYCOPG2_AVAILABLE
+        )
+
+        if self.is_postgres:
+            logger.info("Modo de base de datos: PostgreSQL en la nube activado.")
+        else:
+            logger.info("Modo de base de datos: SQLite local (%s).", self.db_path)
+
         self.init_db()
 
-    def get_connection(self) -> sqlite3.Connection:
-        """Obtiene una conexión a la base de datos SQLite con fábrica de filas."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        return conn
+    def get_connection(self):
+        """Crea y retorna una nueva conexión a la base de datos correspondiente."""
+        if self.is_postgres:
+            conn = psycopg2.connect(
+                self.database_url, 
+                cursor_factory=psycopg2.extras.RealDictCursor
+            )
+            return conn
+        else:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
+            return conn
+
+    @contextmanager
+    def get_cursor(self):
+        """Context manager que maneja la conexión, transacción y cursor de forma segura."""
+        conn = self.get_connection()
+        try:
+            if self.is_postgres:
+                with conn:
+                    with conn.cursor() as cur:
+                        yield cur
+            else:
+                with conn:
+                    cur = conn.cursor()
+                    yield cur
+        finally:
+            conn.close()
+
+    def _format_query(self, sql: str) -> str:
+        """Adapta la sintaxis de parámetros entre SQLite (?) y PostgreSQL (%s)."""
+        if self.is_postgres:
+            return sql.replace("?", "%s")
+        return sql
 
     def init_db(self):
-        """Inicializa las tablas necesarias para autenticación si no existen."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Tabla de Usuarios
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL COLLATE NOCASE,
-                    email TEXT UNIQUE NOT NULL COLLATE NOCASE,
-                    password_hash TEXT NOT NULL,
-                    salt TEXT NOT NULL,
-                    full_name TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
-            # Tabla de Sesiones Activas
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS sessions (
-                    token TEXT PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    expires_at TIMESTAMP NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-                )
-            """)
-
-            # Índices de búsqueda rápida
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id)")
-            
-            conn.commit()
-            logger.info("Base de datos SQLite inicializada correctamente en %s", self.db_path)
+        """Inicializa las tablas e índices necesarios para la autenticación y sesiones."""
+        try:
+            if self.is_postgres:
+                with self.get_cursor() as cur:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id SERIAL PRIMARY KEY,
+                            username VARCHAR(100) UNIQUE NOT NULL,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            password_hash VARCHAR(255) NOT NULL,
+                            salt VARCHAR(255) NOT NULL,
+                            full_name VARCHAR(255),
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                    """)
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS sessions (
+                            token VARCHAR(255) PRIMARY KEY,
+                            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            expires_at TIMESTAMP NOT NULL
+                        );
+                    """)
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users (LOWER(username));")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);")
+                logger.info("Tablas de PostgreSQL verificadas e inicializadas con éxito.")
+            else:
+                with self.get_cursor() as cur:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            username TEXT UNIQUE NOT NULL COLLATE NOCASE,
+                            email TEXT UNIQUE NOT NULL COLLATE NOCASE,
+                            password_hash TEXT NOT NULL,
+                            salt TEXT NOT NULL,
+                            full_name TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS sessions (
+                            token TEXT PRIMARY KEY,
+                            user_id INTEGER NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            expires_at TIMESTAMP NOT NULL,
+                            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                        )
+                    """)
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token)")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id)")
+                logger.info("Tablas de SQLite verificadas e inicializadas en %s", self.db_path)
+        except Exception as e:
+            logger.error("Error al inicializar la base de datos: %s", e)
+            raise
 
     # -------------------------------------------------------------
     # Utilidades de Criptografía y Contraseñas
@@ -83,30 +157,34 @@ class DatabaseService:
     # -------------------------------------------------------------
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Busca un usuario por su identificador primario."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id, username, email, full_name, created_at FROM users WHERE id = ?",
-                (user_id,)
-            )
-            row = cursor.fetchone()
-            return dict(row) if row else None
+        sql = "SELECT id, username, email, full_name, created_at FROM users WHERE id = ?"
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql), (user_id,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            data = dict(row)
+            if isinstance(data.get("created_at"), datetime):
+                data["created_at"] = data["created_at"].isoformat()
+            return data
 
     def get_user_by_username_or_email(self, identifier: str) -> Optional[Dict[str, Any]]:
         """Busca un usuario por su nombre de usuario o correo electrónico (incluyendo hashes)."""
         clean_id = identifier.strip().lower()
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT id, username, email, password_hash, salt, full_name, created_at 
-                FROM users 
-                WHERE LOWER(username) = ? OR LOWER(email) = ?
-                """,
-                (clean_id, clean_id)
-            )
-            row = cursor.fetchone()
-            return dict(row) if row else None
+        sql = """
+            SELECT id, username, email, password_hash, salt, full_name, created_at 
+            FROM users 
+            WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)
+        """
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql), (clean_id, clean_id))
+            row = cur.fetchone()
+            if not row:
+                return None
+            data = dict(row)
+            if isinstance(data.get("created_at"), datetime):
+                data["created_at"] = data["created_at"].isoformat()
+            return data
 
     def create_user(
         self, 
@@ -138,24 +216,34 @@ class DatabaseService:
         # Cifrar contraseña
         pwd_hash, salt = self.hash_password(password)
 
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        with self.get_cursor() as cur:
+            if self.is_postgres:
+                sql = """
+                    INSERT INTO users (username, email, password_hash, salt, full_name)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id, created_at
                 """
-                INSERT INTO users (username, email, password_hash, salt, full_name)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (username_clean, email_clean, pwd_hash, salt, full_name_clean)
-            )
-            user_id = cursor.lastrowid
-            conn.commit()
+                cur.execute(sql, (username_clean, email_clean, pwd_hash, salt, full_name_clean))
+                row = cur.fetchone()
+                user_id = row["id"]
+                created_at = row["created_at"]
+                if isinstance(created_at, datetime):
+                    created_at = created_at.isoformat()
+            else:
+                sql = """
+                    INSERT INTO users (username, email, password_hash, salt, full_name)
+                    VALUES (?, ?, ?, ?, ?)
+                """
+                cur.execute(sql, (username_clean, email_clean, pwd_hash, salt, full_name_clean))
+                user_id = cur.lastrowid
+                created_at = datetime.utcnow().isoformat()
 
         return {
             "id": user_id,
             "username": username_clean,
             "email": email_clean,
             "full_name": full_name_clean,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": created_at
         }
 
     def authenticate_user(self, username_or_email: str, password: str) -> Optional[Dict[str, Any]]:
@@ -170,7 +258,6 @@ class DatabaseService:
         if not self.verify_password(password, user_row["password_hash"], user_row["salt"]):
             return None
 
-        # Excluir hash y salt del retorno
         return {
             "id": user_row["id"],
             "username": user_row["username"],
@@ -187,16 +274,14 @@ class DatabaseService:
         token = secrets.token_urlsafe(32)
         expires_at = datetime.utcnow() + timedelta(days=duration_days)
 
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO sessions (token, user_id, expires_at)
-                VALUES (?, ?, ?)
-                """,
-                (token, user_id, expires_at.isoformat())
-            )
-            conn.commit()
+        sql = """
+            INSERT INTO sessions (token, user_id, expires_at)
+            VALUES (?, ?, ?)
+        """
+        param_expires = expires_at if self.is_postgres else expires_at.isoformat()
+
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql), (token, user_id, param_expires))
 
         return token
 
@@ -205,26 +290,28 @@ class DatabaseService:
         if not token:
             return None
 
-        now = datetime.utcnow().isoformat()
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT u.id, u.username, u.email, u.full_name, u.created_at, s.expires_at
-                FROM sessions s
-                JOIN users u ON s.user_id = u.id
-                WHERE s.token = ? AND s.expires_at > ?
-                """,
-                (token, now)
-            )
-            row = cursor.fetchone()
+        now = datetime.utcnow()
+        param_now = now if self.is_postgres else now.isoformat()
+
+        sql = """
+            SELECT u.id, u.username, u.email, u.full_name, u.created_at, s.expires_at
+            FROM sessions s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.token = ? AND s.expires_at > ?
+        """
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql), (token, param_now))
+            row = cur.fetchone()
             if row:
+                created_at = row["created_at"]
+                if isinstance(created_at, datetime):
+                    created_at = created_at.isoformat()
                 return {
                     "id": row["id"],
                     "username": row["username"],
                     "email": row["email"],
                     "full_name": row["full_name"],
-                    "created_at": row["created_at"]
+                    "created_at": created_at
                 }
             return None
 
@@ -233,11 +320,10 @@ class DatabaseService:
         if not token:
             return False
 
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM sessions WHERE token = ?", (token,))
-            conn.commit()
-            return cursor.rowcount > 0
+        sql = "DELETE FROM sessions WHERE token = ?"
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql), (token,))
+            return cur.rowcount > 0
 
 # Instancia singleton del servicio de base de datos
 db_service = DatabaseService()
