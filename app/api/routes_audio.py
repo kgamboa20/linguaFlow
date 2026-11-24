@@ -1,6 +1,7 @@
-from fastapi import APIRouter, UploadFile, File, Form, Query, HTTPException, Response
+from fastapi import APIRouter, UploadFile, File, Form, Query, HTTPException, Response, Depends
 from typing import Dict, Any
 from app.services.audio_service import audio_service
+from app.api.routes_auth import get_current_user
 
 router = APIRouter(prefix="/api/audio", tags=["Audio (STT & TTS)"])
 
@@ -33,11 +34,12 @@ async def text_to_speech(
 async def transcribe_and_translate_endpoint(
     audio: UploadFile = File(..., description="Archivo de audio grabado (WAV, MP3, WebM)"),
     source_lang: str = Form("auto", description="Idioma del hablante o 'auto'"),
-    target_lang: str = Form("en", description="Idioma al cual traducir la voz")
+    target_lang: str = Form("en", description="Idioma al cual traducir la voz"),
+    user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """
     Recibe un audio capturado del micrófono, extrae la transcripción
-    y traduce el contenido en tiempo real.
+    y traduce el contenido en tiempo real. Exclusivo para usuarios autenticados.
     """
     try:
         audio_content = await audio.read()

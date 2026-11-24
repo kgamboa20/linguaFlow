@@ -3,8 +3,14 @@ from pathlib import Path
 
 # Rutas del Proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_DIR = BASE_DIR / "uploads"
+UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", BASE_DIR / "uploads"))
 STATIC_DIR = BASE_DIR / "app" / "static"
+DB_PATH = Path(os.environ.get("DB_PATH", BASE_DIR / "linguaflow.db"))
+
+# Variables de Entorno y Producción
+PORT = int(os.environ.get("PORT", 8000))
+HOST = os.environ.get("HOST", "0.0.0.0")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "production")
 
 # Asegurar existencia del directorio de uploads
 os.makedirs(UPLOAD_DIR, exist_ok=True)

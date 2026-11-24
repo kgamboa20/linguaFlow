@@ -17,7 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
     recognition: null,
     isRecording: false,
     selectedDocFile: null,
-    theme: localStorage.getItem("linguaflow_theme") || "dark"
+    theme: localStorage.getItem("linguaflow_theme") || "dark",
+    user: null,
+    token: localStorage.getItem("linguaflow_token") || null
   };
 
   // ==========================================
@@ -30,11 +32,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const toastContainer = document.getElementById("toastContainer");
   const ttsPlayer = document.getElementById("ttsAudioPlayer");
 
-  // Tabs
+  // Tabs & Lock Icons
   const tabButtons = document.querySelectorAll(".tab-btn");
   const tabPanes = document.querySelectorAll(".tab-pane");
+  const lockIconVoice = document.getElementById("lockIconVoice");
+  const lockIconDocs = document.getElementById("lockIconDocs");
+  const lockIconAcademy = document.getElementById("lockIconAcademy");
 
-  // Tab 1: Texto
+  // Tab 1: Texto & Modo Invitado
   const textSourceLang = document.getElementById("textSourceLang");
   const textTargetLang = document.getElementById("textTargetLang");
   const detectedLangTag = document.getElementById("detectedLangTag");
@@ -44,13 +49,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const targetText = document.getElementById("targetText");
   const sourceCharCount = document.getElementById("sourceCharCount");
   const targetCharCount = document.getElementById("targetCharCount");
+  const charLimitLabel = document.getElementById("charLimitLabel");
+  const guestTierBanner = document.getElementById("guestTierBanner");
+  const guestBannerAuthBtn = document.getElementById("guestBannerAuthBtn");
   const clearTextBtn = document.getElementById("clearTextBtn");
   const translatingIndicator = document.getElementById("translatingIndicator");
   const listenSourceBtn = document.getElementById("listenSourceBtn");
   const listenTargetBtn = document.getElementById("listenTargetBtn");
   const copyTargetBtn = document.getElementById("copyTargetBtn");
 
-  // Tab 2: Voz
+  // Tab 2: Voz & Lock Gate
+  const voiceLockGate = document.getElementById("voiceLockGate");
+  const voiceMainLayout = document.getElementById("voiceMainLayout");
   const micRecordBtn = document.getElementById("micRecordBtn");
   const voiceStatusText = document.getElementById("voiceStatusText");
   const audioWaveVisualizer = document.getElementById("audioWaveVisualizer");
@@ -63,7 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const speakVoiceResultBtn = document.getElementById("speakVoiceResultBtn");
   const copyVoiceResultBtn = document.getElementById("copyVoiceResultBtn");
 
-  // Tab 3: Documentos
+  // Tab 3: Documentos & Lock Gate
+  const docsLockGate = document.getElementById("docsLockGate");
+  const docsMainLayout = document.getElementById("docsMainLayout");
   const documentDropZone = document.getElementById("documentDropZone");
   const docFileInput = document.getElementById("docFileInput");
   const selectedFileCard = document.getElementById("selectedFileCard");
@@ -81,9 +93,74 @@ document.addEventListener("DOMContentLoaded", () => {
   const docOriginalPreview = document.getElementById("docOriginalPreview");
   const docTranslatedPreview = document.getElementById("docTranslatedPreview");
 
-  // Tab 4: Historial
-  const historyListContainer = document.getElementById("historyListContainer");
-  const clearAllHistoryBtn = document.getElementById("clearAllHistoryBtn");
+  // Tab 4: Capacitaciones / Clases (LinguaAcademy) & Lock Gate
+  const academyLockGate = document.getElementById("academyLockGate");
+  const academyMainLayout = document.getElementById("academyMainLayout");
+  const academyTargetLang = document.getElementById("academyTargetLang");
+  const academyModulesList = document.getElementById("academyModulesList");
+  const customLessonForm = document.getElementById("customLessonForm");
+  const customLessonTopic = document.getElementById("customLessonTopic");
+  const customLessonBtn = document.getElementById("customLessonBtn");
+  const lessonLevelBadge = document.getElementById("lessonLevelBadge");
+  const lessonLangTargetName = document.getElementById("lessonLangTargetName");
+  const lessonTitle = document.getElementById("lessonTitle");
+  const lessonDescription = document.getElementById("lessonDescription");
+  const tabStudyModeBtn = document.getElementById("tabStudyModeBtn");
+  const tabQuizModeBtn = document.getElementById("tabQuizModeBtn");
+  const lessonStudyPane = document.getElementById("lessonStudyPane");
+  const lessonQuizPane = document.getElementById("lessonQuizPane");
+  const phrasesCardsGrid = document.getElementById("phrasesCardsGrid");
+  const gateAuthButtons = document.querySelectorAll(".btn-gate-auth");
+  const quizQuestion = document.getElementById("quizQuestion");
+  const quizOptionsGrid = document.getElementById("quizOptionsGrid");
+  const quizFeedbackBox = document.getElementById("quizFeedbackBox");
+  const quizFeedbackIcon = document.getElementById("quizFeedbackIcon");
+  const quizFeedbackText = document.getElementById("quizFeedbackText");
+  const quizTipText = document.getElementById("quizTipText");
+  const pronunciationFeedbackCard = document.getElementById("pronunciationFeedbackCard");
+  const pronunciationResultText = document.getElementById("pronunciationResultText");
+  const pronunciationScoreBadge = document.getElementById("pronunciationScoreBadge");
+  const closePronunciationBtn = document.getElementById("closePronunciationBtn");
+
+  // Autenticación de Usuario (Navbar & Modal)
+  const openAuthModalBtn = document.getElementById("openAuthModalBtn");
+  const userProfileMenu = document.getElementById("userProfileMenu");
+  const userProfileBtn = document.getElementById("userProfileBtn");
+  const userDropdownCard = document.getElementById("userDropdownCard");
+  const userAvatarInitial = document.getElementById("userAvatarInitial");
+  const userDisplayName = document.getElementById("userDisplayName");
+  const dropdownAvatarLg = document.getElementById("dropdownAvatarLg");
+  const dropdownFullName = document.getElementById("dropdownFullName");
+  const dropdownEmail = document.getElementById("dropdownEmail");
+  const dropdownUsername = document.getElementById("dropdownUsername");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  // Modal Auth
+  const authModalBackdrop = document.getElementById("authModalBackdrop");
+  const closeAuthModalBtn = document.getElementById("closeAuthModalBtn");
+  const authModalTitle = document.getElementById("authModalTitle");
+  const authModalSubtitle = document.getElementById("authModalSubtitle");
+  const tabLoginBtn = document.getElementById("tabLoginBtn");
+  const tabRegisterBtn = document.getElementById("tabRegisterBtn");
+  const authAlertBox = document.getElementById("authAlertBox");
+  const authAlertMessage = document.getElementById("authAlertMessage");
+
+  // Formulario Login
+  const loginForm = document.getElementById("loginForm");
+  const loginIdentifier = document.getElementById("loginIdentifier");
+  const loginPassword = document.getElementById("loginPassword");
+  const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+  const linkSwitchToRegister = document.getElementById("linkSwitchToRegister");
+
+  // Formulario Registro
+  const registerForm = document.getElementById("registerForm");
+  const regFullName = document.getElementById("regFullName");
+  const regUsername = document.getElementById("regUsername");
+  const regEmail = document.getElementById("regEmail");
+  const regPassword = document.getElementById("regPassword");
+  const regPasswordConfirm = document.getElementById("regPasswordConfirm");
+  const registerSubmitBtn = document.getElementById("registerSubmitBtn");
+  const linkSwitchToLogin = document.getElementById("linkSwitchToLogin");
 
   // ==========================================
   // Inicialización del Tema (Dark / Light)
@@ -137,8 +214,10 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.classList.add("active");
       document.getElementById(tabId).classList.add("active");
 
-      if (tabId === "history-tab") {
-        renderHistory();
+      if (tabId === "academy-tab") {
+        if (!state.academyLoaded) {
+          loadAcademyModules(academyTargetLang.value || "en");
+        }
       }
     });
   });
@@ -158,6 +237,10 @@ document.addEventListener("DOMContentLoaded", () => {
       populateSelect(voiceSourceLang, langs, true, "es");
       populateSelect(voiceTargetLang, langs, false, "en");
       populateSelect(docTargetLang, langs, false, "en");
+      populateSelect(academyTargetLang, langs, false, "en");
+
+      // Carga inicial de módulos de la academia en inglés
+      loadAcademyModules("en");
     } catch (err) {
       console.error(err);
       showToast("Error al cargar lista de idiomas", "error");
@@ -165,15 +248,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function populateSelect(selectElement, langs, allowAuto = false, defaultVal = "en") {
+    const previousVal = selectElement.value || defaultVal;
     selectElement.innerHTML = "";
     Object.entries(langs).forEach(([code, name]) => {
       if (!allowAuto && code === "auto") return;
       const option = document.createElement("option");
       option.value = code;
       option.textContent = name;
-      if (code === defaultVal) option.selected = true;
+      if (code === previousVal) {
+        option.selected = true;
+      }
       selectElement.appendChild(option);
     });
+    if (!selectElement.value && selectElement.options.length > 0) {
+      selectElement.value = defaultVal;
+    }
   }
 
   // ==========================================
@@ -213,6 +302,9 @@ document.addEventListener("DOMContentLoaded", () => {
             targetText.value = "";
             targetCharCount.textContent = "0";
             detectedLangTag.classList.add("hidden");
+          } else if (data.status === "error" || data.error) {
+            console.error("Error en WebSocket de traducción:", data.error);
+            showToast(data.error || "Error al traducir texto", "error");
           }
         } catch (e) {
           console.error("Error analizando mensaje WebSocket:", e);
@@ -238,7 +330,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Traducción síncrona/asíncrona con debounce
   function handleLiveTranslation() {
-    const text = sourceText.value;
+    let text = sourceText.value;
+
+    // Control de límite para usuarios invitados (sin sesión)
+    if (!state.user && text.length > 150) {
+      text = text.slice(0, 150);
+      sourceText.value = text;
+      showToast("Modo Invitado limitado a 150 caracteres. Inicia sesión para traducciones ilimitadas.", "info");
+    }
+
     sourceCharCount.textContent = text.length;
 
     clearTimeout(state.typingTimer);
@@ -264,16 +364,22 @@ document.addEventListener("DOMContentLoaded", () => {
       state.ws.send(JSON.stringify({
         text: text,
         source_lang: sourceLang,
-        target_lang: targetLang
+        target_lang: targetLang,
+        token: state.token || null
       }));
       return;
     }
 
     // 2. Fallback a API REST
     try {
+      const headers = { "Content-Type": "application/json" };
+      if (state.token) {
+        headers["Authorization"] = `Bearer ${state.token}`;
+      }
+
       const resp = await fetch("/api/translate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify({
           text: text,
           source_lang: sourceLang,
@@ -283,7 +389,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       translatingIndicator.classList.add("hidden");
 
-      if (!resp.ok) throw new Error("Error en la respuesta del servidor.");
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({ detail: "Error en el servidor." }));
+        throw new Error(errorData.detail || "Error en la respuesta del servidor.");
+      }
       const data = await resp.json();
 
       targetText.value = data.translated_text;
@@ -424,9 +533,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Traducir simultáneamente
         try {
+          const headers = { "Content-Type": "application/json" };
+          if (state.token) {
+            headers["Authorization"] = `Bearer ${state.token}`;
+          }
           const resp = await fetch("/api/translate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
             body: JSON.stringify({
               text: currentSpeech,
               source_lang: voiceSourceLang.value,
@@ -601,8 +714,14 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("target_lang", docTargetLang.value);
 
     try {
+      const docHeaders = {};
+      if (state.token) {
+        docHeaders["Authorization"] = `Bearer ${state.token}`;
+      }
+
       const response = await fetch("/api/documents/upload-translate", {
         method: "POST",
+        headers: docHeaders,
         body: formData
       });
 
@@ -652,89 +771,333 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // Tab 4: Historial Local
+  // Tab 4: LinguaAcademy (Capacitaciones y Clases)
   // ==========================================
-  function saveToHistory(original, translated, sourceCode, targetCode) {
-    if (!original || !translated || original.length < 3) return;
+  function saveToHistory() {
+    // Apartado de historial reemplazado por Capacitaciones
+  }
 
-    let history = JSON.parse(localStorage.getItem("linguaflow_history") || "[]");
-    // Evitar duplicados inmediatos
-    if (history.length > 0 && history[0].original === original && history[0].translated === translated) {
+  async function loadAcademyModules(langCode) {
+    if (!state.user) {
+      return; // Bloqueado para modo invitado (se muestra academyLockGate)
+    }
+    state.academyLoaded = true;
+    const targetLang = langCode || academyTargetLang.value || "en";
+    const langName = state.languages[targetLang] || targetLang;
+    lessonLangTargetName.textContent = langName;
+
+    academyModulesList.innerHTML = `
+      <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
+        <span class="spinner-sm"></span> Cargando módulos de ${escapeHTML(langName)}...
+      </div>
+    `;
+
+    try {
+      const headers = {};
+      if (state.token) {
+        headers["Authorization"] = `Bearer ${state.token}`;
+      }
+      const resp = await fetch(`/api/academy/modules/${targetLang}`, { headers });
+      if (!resp.ok) throw new Error("No se pudieron cargar los módulos de capacitación.");
+      const modules = await resp.json();
+      state.academyModules = modules;
+
+      renderAcademyModulesList(modules);
+      if (modules.length > 0) {
+        selectAcademyModule(modules[0]);
+      }
+    } catch (err) {
+      console.error(err);
+      academyModulesList.innerHTML = `
+        <div style="padding: 1rem; color: var(--danger); font-size: 0.85rem;">
+          Error al cargar clases de este idioma. Intenta de nuevo.
+        </div>
+      `;
+    }
+  }
+
+  function renderAcademyModulesList(modules) {
+    academyModulesList.innerHTML = "";
+
+    modules.forEach((mod, idx) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = `academy-module-item ${idx === 0 ? "active" : ""}`;
+      item.setAttribute("data-mod-id", mod.id);
+      item.innerHTML = `
+        <div class="mod-icon">${mod.icon || "📚"}</div>
+        <div class="mod-info">
+          <strong>${escapeHTML(mod.title)}</strong>
+          <span class="mod-level">${escapeHTML(mod.level)}</span>
+        </div>
+      `;
+
+      item.addEventListener("click", () => {
+        document.querySelectorAll(".academy-module-item").forEach(b => b.classList.remove("active"));
+        item.classList.add("active");
+        selectAcademyModule(mod);
+      });
+
+      academyModulesList.appendChild(item);
+    });
+  }
+
+  function selectAcademyModule(mod) {
+    state.currentModule = mod;
+    lessonLevelBadge.textContent = mod.level;
+    lessonTitle.textContent = mod.title;
+    lessonDescription.textContent = mod.description;
+
+    const lesson = (mod.lessons && mod.lessons[0]) || null;
+    const targetLang = academyTargetLang.value || "en";
+
+    if (lesson) {
+      renderPhraseCards(lesson.phrases || [], targetLang);
+      renderQuiz(lesson.quiz);
+    } else {
+      phrasesCardsGrid.innerHTML = `<p style="color: var(--text-muted); padding: 1rem;">No hay frases cargadas para esta lección.</p>`;
+    }
+
+    // Por defecto modo estudio activo
+    switchLessonTab("study");
+  }
+
+  function renderPhraseCards(phrases, targetLang) {
+    phrasesCardsGrid.innerHTML = "";
+
+    phrases.forEach((phrase) => {
+      const card = document.createElement("div");
+      card.className = "phrase-card";
+      card.innerHTML = `
+        <div class="phrase-texts">
+          <div class="phrase-target">${escapeHTML(phrase.target_text)}</div>
+          ${phrase.phonetic ? `<div class="phrase-phonetic">🗣️ ${escapeHTML(phrase.phonetic)}</div>` : ""}
+          <div class="phrase-native">🇪🇸 ${escapeHTML(phrase.es)}</div>
+          <div class="phrase-context">💡 ${escapeHTML(phrase.context || "Uso práctico")}</div>
+        </div>
+        <div class="phrase-actions">
+          <button class="btn-phrase-audio" type="button" title="Escuchar pronunciación nativa">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span>Escuchar</span>
+          </button>
+          <button class="btn-phrase-mic" type="button" title="Practicar pronunciación con micrófono">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            <span>Practicar</span>
+          </button>
+        </div>
+      `;
+
+      // Evento Escuchar TTS
+      const audioBtn = card.querySelector(".btn-phrase-audio");
+      audioBtn.addEventListener("click", () => {
+        playTTS(phrase.target_text, targetLang);
+      });
+
+      // Evento Practicar con Micrófono
+      const micBtn = card.querySelector(".btn-phrase-mic");
+      micBtn.addEventListener("click", () => {
+        handlePracticePronunciation(phrase.target_text, targetLang, micBtn);
+      });
+
+      phrasesCardsGrid.appendChild(card);
+    });
+  }
+
+  function renderQuiz(quiz) {
+    if (!quiz) {
+      quizCard.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 2rem;">No hay evaluación para esta clase.</p>`;
       return;
     }
 
-    const item = {
-      id: Date.now(),
-      original: original,
-      translated: translated,
-      source: sourceCode,
-      target: targetCode,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    quizQuestion.textContent = quiz.question;
+    quizTipText.textContent = quiz.tip || "Revisa las frases anteriores para recordar la respuesta correcta.";
+    quizFeedbackBox.classList.add("hidden");
+    quizFeedbackBox.className = "quiz-feedback-box hidden";
+    quizOptionsGrid.innerHTML = "";
+
+    quiz.options.forEach((optText, optIdx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "quiz-option-btn";
+      btn.textContent = optText;
+
+      btn.addEventListener("click", () => {
+        const isCorrect = optIdx === quiz.correct_index;
+
+        // Deshabilitar todas las opciones
+        document.querySelectorAll(".quiz-option-btn").forEach((b, i) => {
+          b.disabled = true;
+          if (i === quiz.correct_index) {
+            b.classList.add("correct");
+          } else if (b === btn && !isCorrect) {
+            b.classList.add("incorrect");
+          }
+        });
+
+        // Mostrar feedback
+        quizFeedbackBox.classList.remove("hidden");
+        if (isCorrect) {
+          quizFeedbackBox.className = "quiz-feedback-box correct";
+          quizFeedbackIcon.textContent = "✓";
+          quizFeedbackText.textContent = "¡Respuesta Correcta! Excelente retención del idioma.";
+          showToast("¡Respuesta correcta! Felicitaciones 🎉", "success");
+        } else {
+          quizFeedbackBox.className = "quiz-feedback-box incorrect";
+          quizFeedbackIcon.textContent = "✗";
+          quizFeedbackText.textContent = "Casi... La respuesta correcta ha sido resaltada en verde.";
+        }
+      });
+
+      quizOptionsGrid.appendChild(btn);
+    });
+  }
+
+  // Práctica de pronunciación interactiva con reconocimiento de voz
+  function handlePracticePronunciation(expectedText, langCode, micBtn) {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      showToast("Tu navegador no soporta captura de voz nativa.", "error");
+      return;
+    }
+
+    const rec = new SpeechRec();
+    rec.lang = langCode === "auto" ? "en-US" : langCode;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    micBtn.classList.add("recording");
+    micBtn.querySelector("span").textContent = "Habla...";
+    showToast(`Di en voz alta: "${expectedText}"`, "info");
+
+    rec.onresult = (e) => {
+      micBtn.classList.remove("recording");
+      micBtn.querySelector("span").textContent = "Practicar";
+
+      const spoken = e.results[0][0].transcript.trim();
+      evaluateSpokenAccuracy(spoken, expectedText);
     };
 
-    history.unshift(item);
-    if (history.length > 20) history = history.slice(0, 20);
-    localStorage.setItem("linguaflow_history", JSON.stringify(history));
-  }
+    rec.onerror = () => {
+      micBtn.classList.remove("recording");
+      micBtn.querySelector("span").textContent = "Practicar";
+      showToast("No se pudo capturar audio. Verifica el permiso de micrófono.", "error");
+    };
 
-  function renderHistory() {
-    const history = JSON.parse(localStorage.getItem("linguaflow_history") || "[]");
-    historyListContainer.innerHTML = "";
+    rec.onend = () => {
+      micBtn.classList.remove("recording");
+      micBtn.querySelector("span").textContent = "Practicar";
+    };
 
-    if (history.length === 0) {
-      historyListContainer.innerHTML = `
-        <div class="history-empty">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <p>Aún no tienes traducciones recientes.</p>
-        </div>
-      `;
-      return;
+    try {
+      rec.start();
+    } catch (err) {
+      micBtn.classList.remove("recording");
+      micBtn.querySelector("span").textContent = "Practicar";
     }
-
-    history.forEach(item => {
-      const card = document.createElement("div");
-      card.className = "history-item-card";
-      card.innerHTML = `
-        <div class="history-item-meta">
-          <span class="history-lang-badge">${(state.languages[item.source] || item.source).toUpperCase()} → ${(state.languages[item.target] || item.target).toUpperCase()}</span>
-          <span>${item.time}</span>
-        </div>
-        <div class="history-content-row">
-          <div>${escapeHTML(item.original)}</div>
-          <div style="color: var(--accent-primary); font-weight: 500;">${escapeHTML(item.translated)}</div>
-        </div>
-        <div class="history-actions">
-          <button class="btn-tool-sm copy-hist-btn" data-text="${escapeAttr(item.translated)}">Copiar</button>
-          <button class="btn-tool-sm restore-hist-btn" data-orig="${escapeAttr(item.original)}" data-trans="${escapeAttr(item.translated)}" data-src="${item.source}" data-tgt="${item.target}">Restaurar</button>
-        </div>
-      `;
-      historyListContainer.appendChild(card);
-    });
-
-    document.querySelectorAll(".copy-hist-btn").forEach(b => {
-      b.addEventListener("click", async () => {
-        await navigator.clipboard.writeText(b.getAttribute("data-text"));
-        showToast("Copiado al portapapeles", "success");
-      });
-    });
-
-    document.querySelectorAll(".restore-hist-btn").forEach(b => {
-      b.addEventListener("click", () => {
-        sourceText.value = b.getAttribute("data-orig");
-        targetText.value = b.getAttribute("data-trans");
-        textSourceLang.value = b.getAttribute("data-src");
-        textTargetLang.value = b.getAttribute("data-tgt");
-        // Cambiar a pestaña texto
-        document.querySelector('[data-tab="text-tab"]').click();
-        showToast("Traducción restaurada en el editor", "info");
-      });
-    });
   }
 
-  clearAllHistoryBtn.addEventListener("click", () => {
-    localStorage.removeItem("linguaflow_history");
-    renderHistory();
-    showToast("Historial borrado", "info");
+  function evaluateSpokenAccuracy(spoken, target) {
+    pronunciationFeedbackCard.classList.remove("hidden");
+    pronunciationResultText.textContent = `Dijiste: "${spoken}"`;
+
+    const normSpoken = spoken.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+    const normTarget = target.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+
+    if (normSpoken === normTarget || normTarget.includes(normSpoken) || normSpoken.includes(normTarget)) {
+      pronunciationScoreBadge.textContent = "¡Excelente pronunciación! 🎉";
+      pronunciationScoreBadge.style.color = "var(--success)";
+      pronunciationScoreBadge.style.borderColor = "var(--success)";
+      showToast("¡Pronunciación excelente!", "success");
+    } else {
+      pronunciationScoreBadge.textContent = "¡Buen intento! Escucha el audio y repítelo de nuevo.";
+      pronunciationScoreBadge.style.color = "var(--warning)";
+      pronunciationScoreBadge.style.borderColor = "var(--warning)";
+    }
+  }
+
+  // Cambiar entre Pestaña Estudio y Pestaña Quiz
+  function switchLessonTab(tab) {
+    if (tab === "study") {
+      tabStudyModeBtn.classList.add("active");
+      tabQuizModeBtn.classList.remove("active");
+      lessonStudyPane.classList.remove("hidden");
+      lessonQuizPane.classList.add("hidden");
+    } else {
+      tabQuizModeBtn.classList.add("active");
+      tabStudyModeBtn.classList.remove("active");
+      lessonQuizPane.classList.remove("hidden");
+      lessonStudyPane.classList.add("hidden");
+    }
+  }
+
+  tabStudyModeBtn.addEventListener("click", () => switchLessonTab("study"));
+  tabQuizModeBtn.addEventListener("click", () => switchLessonTab("quiz"));
+
+  // Evento Cambio de Idioma en la Academia
+  academyTargetLang.addEventListener("change", () => {
+    loadAcademyModules(academyTargetLang.value);
+  });
+
+  // Generador de Clase Personalizada
+  customLessonForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const topic = customLessonTopic.value.trim();
+    if (!topic) return;
+
+    const targetLang = academyTargetLang.value || "en";
+    customLessonBtn.disabled = true;
+    customLessonBtn.innerHTML = `<span class="spinner-sm"></span> Diseñando clase...`;
+
+    try {
+      const customHeaders = { "Content-Type": "application/json" };
+      if (state.token) {
+        customHeaders["Authorization"] = `Bearer ${state.token}`;
+      }
+      const resp = await fetch("/api/academy/custom-lesson", {
+        method: "POST",
+        headers: customHeaders,
+        body: JSON.stringify({
+          topic: topic,
+          target_lang: targetLang
+        })
+      });
+
+      if (!resp.ok) throw new Error("No se pudo generar la clase personalizada.");
+      const customLesson = await resp.json();
+
+      const newMod = {
+        id: `custom_${Date.now()}`,
+        title: `Clase: ${customLesson.topic}`,
+        level: "Personalizada ✨",
+        icon: "💡",
+        description: `Capacitación interactiva enfocada en el tema solicitado: "${customLesson.topic}".`,
+        lessons: [
+          {
+            id: `lesson_custom`,
+            title: `Vocabulario de ${customLesson.topic}`,
+            phrases: customLesson.phrases,
+            quiz: customLesson.quiz
+          }
+        ]
+      };
+
+      state.academyModules.unshift(newMod);
+      renderAcademyModulesList(state.academyModules);
+      selectAcademyModule(newMod);
+      customLessonForm.reset();
+      showToast(`¡Clase de "${topic}" creada con éxito!`, "success");
+
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Error al generar clase.", "error");
+    } finally {
+      customLessonBtn.disabled = false;
+      customLessonBtn.innerHTML = `<span>Crear Clase Personalizada</span>`;
+    }
+  });
+
+  closePronunciationBtn.addEventListener("click", () => {
+    pronunciationFeedbackCard.classList.add("hidden");
   });
 
   function escapeHTML(str) {
@@ -752,8 +1115,391 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
+  // Sistema de Autenticación de Usuarios
+  // ==========================================
+
+  // Verificar sesión activa al cargar
+  async function checkAuthStatus() {
+    if (!state.token) {
+      renderUserUI();
+      return;
+    }
+
+    try {
+      const resp = await fetch("/api/auth/me", {
+        headers: { "Authorization": `Bearer ${state.token}` }
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        state.user = data.user;
+      } else {
+        // Token inválido o expirado
+        state.token = null;
+        state.user = null;
+        localStorage.removeItem("linguaflow_token");
+      }
+    } catch (err) {
+      console.warn("No se pudo verificar el estado de autenticación:", err);
+    } finally {
+      renderUserUI();
+    }
+  }
+
+  // Actualizar la interfaz de usuario según el estado de sesión
+  function renderUserUI() {
+    if (state.user) {
+      openAuthModalBtn.classList.add("hidden");
+      userProfileMenu.classList.remove("hidden");
+
+      const displayName = state.user.full_name || state.user.username || "Usuario";
+      const initial = displayName.trim().charAt(0).toUpperCase();
+
+      userAvatarInitial.textContent = initial;
+      dropdownAvatarLg.textContent = initial;
+      userDisplayName.textContent = displayName;
+      dropdownFullName.textContent = displayName;
+      dropdownEmail.textContent = state.user.email || "";
+      dropdownUsername.textContent = `@${state.user.username}`;
+
+      // Ocultar candados en pestañas
+      if (lockIconVoice) lockIconVoice.classList.add("hidden");
+      if (lockIconDocs) lockIconDocs.classList.add("hidden");
+      if (lockIconAcademy) lockIconAcademy.classList.add("hidden");
+
+      // Desbloquear módulos y mostrar contenidos
+      if (voiceLockGate) voiceLockGate.classList.add("hidden");
+      if (voiceMainLayout) voiceMainLayout.classList.remove("hidden");
+
+      if (docsLockGate) docsLockGate.classList.add("hidden");
+      if (docsMainLayout) docsMainLayout.classList.remove("hidden");
+
+      if (academyLockGate) academyLockGate.classList.add("hidden");
+      if (academyMainLayout) academyMainLayout.classList.remove("hidden");
+
+      // Banner y límite en traducción de texto
+      if (guestTierBanner) guestTierBanner.classList.add("hidden");
+      if (charLimitLabel) charLimitLabel.textContent = " caracteres (Ilimitado)";
+
+      // Cargar módulos de la academia si no estaban cargados
+      if (!state.academyLoaded && state.languages && Object.keys(state.languages).length > 0) {
+        loadAcademyModules(academyTargetLang.value || "en");
+      }
+    } else {
+      openAuthModalBtn.classList.remove("hidden");
+      userProfileMenu.classList.add("hidden");
+      userDropdownCard.classList.add("hidden");
+      userProfileMenu.classList.remove("open");
+
+      // Mostrar candados en pestañas
+      if (lockIconVoice) lockIconVoice.classList.remove("hidden");
+      if (lockIconDocs) lockIconDocs.classList.remove("hidden");
+      if (lockIconAcademy) lockIconAcademy.classList.remove("hidden");
+
+      // Bloquear módulos con lock gate y ocultar layouts
+      if (voiceLockGate) voiceLockGate.classList.remove("hidden");
+      if (voiceMainLayout) voiceMainLayout.classList.add("hidden");
+
+      if (docsLockGate) docsLockGate.classList.remove("hidden");
+      if (docsMainLayout) docsMainLayout.classList.add("hidden");
+
+      if (academyLockGate) academyLockGate.classList.remove("hidden");
+      if (academyMainLayout) academyMainLayout.classList.add("hidden");
+
+      // Banner y límite de 150 caracteres en texto
+      if (guestTierBanner) guestTierBanner.classList.remove("hidden");
+      if (charLimitLabel) charLimitLabel.textContent = " / 150 caracteres (Invitado)";
+
+      // Truncar texto si excede 150 caracteres
+      if (sourceText && sourceText.value.length > 150) {
+        sourceText.value = sourceText.value.slice(0, 150);
+        handleLiveTranslation();
+      }
+    }
+  }
+
+  // Abrir y cerrar el modal
+  function openAuthModal(initialTab = "login") {
+    authModalBackdrop.classList.remove("hidden");
+    hideAuthAlert();
+    switchAuthTab(initialTab);
+  }
+
+  function closeAuthModal() {
+    authModalBackdrop.classList.add("hidden");
+    hideAuthAlert();
+    loginForm.reset();
+    registerForm.reset();
+  }
+
+  function switchAuthTab(tabName) {
+    hideAuthAlert();
+    if (tabName === "login") {
+      tabLoginBtn.classList.add("active");
+      tabRegisterBtn.classList.remove("active");
+      loginForm.classList.remove("hidden");
+      registerForm.classList.add("hidden");
+      authModalTitle.textContent = "Acceso a tu Cuenta";
+      authModalSubtitle.textContent = "Inicia sesión para acceder a tus traducciones.";
+      setTimeout(() => loginIdentifier.focus(), 50);
+    } else {
+      tabRegisterBtn.classList.add("active");
+      tabLoginBtn.classList.remove("active");
+      registerForm.classList.remove("hidden");
+      loginForm.classList.add("hidden");
+      authModalTitle.textContent = "Crear Cuenta Nueva";
+      authModalSubtitle.textContent = "Únete a LinguaFlow gratis en pocos segundos.";
+      setTimeout(() => regFullName.focus(), 50);
+    }
+  }
+
+  function showAuthAlert(message) {
+    authAlertMessage.textContent = message;
+    authAlertBox.classList.remove("hidden");
+  }
+
+  function hideAuthAlert() {
+    authAlertBox.classList.add("hidden");
+  }
+
+  // Inicio de sesión
+  async function handleLogin(e) {
+    e.preventDefault();
+    hideAuthAlert();
+
+    const identifier = loginIdentifier.value.trim();
+    const password = loginPassword.value;
+
+    if (!identifier || !password) {
+      showAuthAlert("Por favor completa todos los campos requeridos.");
+      return;
+    }
+
+    const btnText = loginSubmitBtn.querySelector(".btn-text");
+    const btnSpinner = loginSubmitBtn.querySelector(".btn-spinner");
+    loginSubmitBtn.disabled = true;
+    btnText.textContent = "Verificando...";
+    btnSpinner.classList.remove("hidden");
+
+    try {
+      const resp = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username_or_email: identifier,
+          password: password
+        })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.detail || "Error al iniciar sesión.");
+      }
+
+      // Guardar sesión
+      state.token = data.token;
+      state.user = data.user;
+      localStorage.setItem("linguaflow_token", data.token);
+
+      renderUserUI();
+      closeAuthModal();
+      showToast(data.message || `¡Bienvenido de nuevo, ${data.user.full_name}!`, "success");
+
+    } catch (err) {
+      showAuthAlert(err.message || "Error al conectar con el servidor.");
+    } finally {
+      loginSubmitBtn.disabled = false;
+      btnText.textContent = "Iniciar Sesión";
+      btnSpinner.classList.add("hidden");
+    }
+  }
+
+  // Registro de nuevo usuario
+  async function handleRegister(e) {
+    e.preventDefault();
+    hideAuthAlert();
+
+    const fullName = regFullName.value.trim();
+    const username = regUsername.value.trim();
+    const email = regEmail.value.trim();
+    const password = regPassword.value;
+    const confirmPassword = regPasswordConfirm.value;
+
+    if (!fullName || !username || !email || !password || !confirmPassword) {
+      showAuthAlert("Todos los campos son obligatorios.");
+      return;
+    }
+
+    if (password.length < 6) {
+      showAuthAlert("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showAuthAlert("Las contraseñas no coinciden. Por favor verifícalas.");
+      return;
+    }
+
+    const btnText = registerSubmitBtn.querySelector(".btn-text");
+    const btnSpinner = registerSubmitBtn.querySelector(".btn-spinner");
+    registerSubmitBtn.disabled = true;
+    btnText.textContent = "Creando cuenta...";
+    btnSpinner.classList.remove("hidden");
+
+    try {
+      const resp = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: fullName,
+          username: username,
+          email: email,
+          password: password
+        })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.detail || "Error al registrar usuario.");
+      }
+
+      // Guardar sesión automática
+      state.token = data.token;
+      state.user = data.user;
+      localStorage.setItem("linguaflow_token", data.token);
+
+      renderUserUI();
+      closeAuthModal();
+      showToast(data.message || "¡Cuenta creada exitosamente!", "success");
+
+    } catch (err) {
+      showAuthAlert(err.message || "Error al registrar cuenta.");
+    } finally {
+      registerSubmitBtn.disabled = false;
+      btnText.textContent = "Crear Cuenta Gratuita";
+      btnSpinner.classList.add("hidden");
+    }
+  }
+
+  // Cerrar sesión
+  async function handleLogout() {
+    if (state.token) {
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${state.token}` }
+        });
+      } catch (e) {
+        console.warn("Aviso al cerrar sesión remota:", e);
+      }
+    }
+
+    state.token = null;
+    state.user = null;
+    localStorage.removeItem("linguaflow_token");
+    renderUserUI();
+    showToast("Has cerrado tu sesión en LinguaFlow.", "info");
+  }
+
+  // ==========================================
+  // Event Listeners de Autenticación
+  // ==========================================
+  openAuthModalBtn.addEventListener("click", () => openAuthModal("login"));
+  closeAuthModalBtn.addEventListener("click", closeAuthModal);
+
+  tabLoginBtn.addEventListener("click", () => switchAuthTab("login"));
+  tabRegisterBtn.addEventListener("click", () => switchAuthTab("register"));
+
+  linkSwitchToRegister.addEventListener("click", (e) => {
+    e.preventDefault();
+    switchAuthTab("register");
+  });
+
+  linkSwitchToLogin.addEventListener("click", (e) => {
+    e.preventDefault();
+    switchAuthTab("login");
+  });
+
+  // Cerrar modal al hacer clic en el backdrop
+  authModalBackdrop.addEventListener("click", (e) => {
+    if (e.target === authModalBackdrop) {
+      closeAuthModal();
+    }
+  });
+
+  // Cerrar con tecla Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !authModalBackdrop.classList.contains("hidden")) {
+      closeAuthModal();
+    }
+  });
+
+  // Toggle de dropdown del usuario en navbar
+  userProfileBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = !userDropdownCard.classList.contains("hidden");
+    if (isOpen) {
+      userDropdownCard.classList.add("hidden");
+      userProfileMenu.classList.remove("open");
+    } else {
+      userDropdownCard.classList.remove("hidden");
+      userProfileMenu.classList.add("open");
+    }
+  });
+
+  // Cerrar dropdown si se hace clic fuera
+  document.addEventListener("click", (e) => {
+    if (!userProfileMenu.contains(e.target)) {
+      userDropdownCard.classList.add("hidden");
+      userProfileMenu.classList.remove("open");
+    }
+  });
+
+  // Envíos de formulario
+  loginForm.addEventListener("submit", handleLogin);
+  registerForm.addEventListener("submit", handleRegister);
+  logoutBtn.addEventListener("click", handleLogout);
+
+  // Apertura de modal de acceso desde banners y gates bloqueados
+  if (guestBannerAuthBtn) {
+    guestBannerAuthBtn.addEventListener("click", () => openAuthModal("login"));
+  }
+
+  gateAuthButtons.forEach(btn => {
+    btn.addEventListener("click", () => openAuthModal("login"));
+  });
+
+  // Botones para mostrar/ocultar contraseñas
+  document.querySelectorAll(".btn-toggle-pwd").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+      const input = document.getElementById(targetId);
+      if (!input) return;
+
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+
+      const eyeOpen = btn.querySelector(".eye-open");
+      const eyeClosed = btn.querySelector(".eye-closed");
+
+      if (eyeOpen && eyeClosed) {
+        if (isPassword) {
+          eyeOpen.classList.add("hidden");
+          eyeClosed.classList.remove("hidden");
+        } else {
+          eyeOpen.classList.remove("hidden");
+          eyeClosed.classList.add("hidden");
+        }
+      }
+    });
+  });
+
+  // ==========================================
   // Arranque Inicial
   // ==========================================
+  checkAuthStatus();
   loadSupportedLanguages();
   initWebSocket();
 });

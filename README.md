@@ -26,8 +26,12 @@
    - Extracción de texto respetando párrafos y estructura de contexto.
    - Generación automática del archivo traducido listo para descargar (`.docx` / `.txt`).
 
-5. **Historial de Sesión**:
-   - Registro local de traducciones recientes con opción para restaurar en el editor o copiar.
+5. **Academia y Capacitaciones de Idiomas (LinguaAcademy)**:
+   - Módulos interactivos tipo clases para aprender cualquiera de los 18 idiomas soportados.
+   - Tarjetas de vocabulario con pronunciación fonética y audio neuronal nativo.
+   - Práctica de pronunciación por micrófono con evaluación de similitud en tiempo real.
+   - Evaluaciones interactivas (Quizzes) con retroalimentación pedagógica instantánea.
+   - Generador de clases personalizadas sobre cualquier tema a medida.
 
 ---
 
@@ -134,7 +138,14 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 |---|---|---|
 | `GET` | `/` | Página principal de la aplicación web. |
 | `GET` | `/health` | Healthcheck del servicio. |
+| `POST` | `/api/auth/register` | Registro de nuevos usuarios con contraseña segura cifrada. |
+| `POST` | `/api/auth/login` | Inicio de sesión con usuario/correo y contraseña. |
+| `GET` | `/api/auth/me` | Obtiene el perfil del usuario autenticado (requiere Bearer token). |
+| `POST` | `/api/auth/logout` | Cierre de sesión e invalidación del token. |
 | `GET` | `/api/languages` | Lista de idiomas soportados y códigos ISO. |
+| `GET` | `/api/academy/languages` | Catálogo de idiomas disponibles para clases y capacitación. |
+| `GET` | `/api/academy/modules/{lang}` | Currículum interactivo completo, tarjetas de frases y quizzes del idioma. |
+| `POST` | `/api/academy/custom-lesson` | Genera una clase temática especializada a medida con IA. |
 | `POST` | `/api/translate` | Traducción síncrona/REST con detección de idioma. |
 | `WS` | `/ws/translate` | Canal bidireccional WebSocket para traducción en tiempo real. |
 | `GET` | `/api/audio/tts` | Genera y transmite voz natural MP3 a partir de texto. |

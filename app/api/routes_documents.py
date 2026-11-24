@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from typing import Dict, Any
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import FileResponse
 from app.config import UPLOAD_DIR, MAX_FILE_SIZE_BYTES
 from app.services.document_service import document_service
+from app.api.routes_auth import get_current_user
 
 router = APIRouter(prefix="/api/documents", tags=["Documentos"])
 
@@ -13,11 +15,13 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 async def upload_and_translate_document(
     file: UploadFile = File(..., description="Documento a traducir (PDF, DOCX, TXT)"),
     source_lang: str = Form("auto", description="Idioma de origen"),
-    target_lang: str = Form("en", description="Idioma de destino")
+    target_lang: str = Form("en", description="Idioma de destino"),
+    user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Extrae el texto de un archivo PDF, DOCX o TXT, realiza la traducción
     manteniendo el contexto y estructura, y genera un archivo descargable.
+    Exclusivo para usuarios autenticados.
     """
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in ALLOWED_EXTENSIONS:

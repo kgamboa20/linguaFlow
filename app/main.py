@@ -5,11 +5,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import STATIC_DIR
+from app.config import STATIC_DIR, HOST, PORT, ENVIRONMENT
 from app.api.routes_translate import router as translate_router
 from app.api.routes_audio import router as audio_router
 from app.api.routes_documents import router as document_router
 from app.api.websockets import router as websocket_router
+from app.api.routes_auth import router as auth_router
+from app.api.routes_academy import router as academy_router
+from app.services.db_service import db_service
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -30,6 +33,8 @@ app.add_middleware(
 )
 
 # Registrar Routers
+app.include_router(auth_router)
+app.include_router(academy_router)
 app.include_router(translate_router)
 app.include_router(audio_router)
 app.include_router(document_router)
@@ -51,5 +56,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    # Ejecución directa para desarrollo local
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    is_dev = ENVIRONMENT.lower() == "development"
+    uvicorn.run("app.main:app", host=HOST, port=PORT, reload=is_dev)

@@ -33,21 +33,69 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
           <span>Texto</span>
         </button>
-        <button class="tab-btn" data-tab="voice-tab">
+        <button class="tab-btn" data-tab="voice-tab" id="tabBtnVoice">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           <span>Voz en Vivo</span>
+          <span class="tab-lock-icon" id="lockIconVoice" title="Módulo exclusivo para usuarios">🔒</span>
         </button>
-        <button class="tab-btn" data-tab="docs-tab">
+        <button class="tab-btn" data-tab="docs-tab" id="tabBtnDocs">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <span>Documentos</span>
+          <span class="tab-lock-icon" id="lockIconDocs" title="Módulo exclusivo para usuarios">🔒</span>
         </button>
-        <button class="tab-btn" data-tab="history-tab">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span>Historial</span>
+        <button class="tab-btn" data-tab="academy-tab" id="tabBtnAcademy">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+          </svg>
+          <span>Capacitaciones</span>
+          <span class="tab-lock-icon" id="lockIconAcademy" title="Módulo exclusivo para usuarios">🔒</span>
         </button>
       </nav>
 
       <div class="nav-actions">
+        <!-- Widget de Autenticación de Usuario -->
+        <div class="user-auth-widget" id="userAuthWidget">
+          <!-- Estado Invitado (Sin sesión) -->
+          <button class="btn-auth-trigger" id="openAuthModalBtn" title="Iniciar sesión o crear cuenta">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Iniciar Sesión</span>
+          </button>
+
+          <!-- Estado Autenticado (Con sesión activa) -->
+          <div class="user-profile-menu hidden" id="userProfileMenu">
+            <button class="user-profile-btn" id="userProfileBtn" title="Menú de usuario" type="button">
+              <div class="user-avatar" id="userAvatarInitial">U</div>
+              <span class="user-name" id="userDisplayName">Usuario</span>
+              <svg class="dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="user-dropdown-card hidden" id="userDropdownCard">
+              <div class="dropdown-user-header">
+                <div class="dropdown-avatar-lg" id="dropdownAvatarLg">U</div>
+                <div class="dropdown-user-info">
+                  <strong id="dropdownFullName">Nombre Usuario</strong>
+                  <span class="dropdown-email" id="dropdownEmail">usuario@correo.com</span>
+                  <span class="dropdown-username" id="dropdownUsername">@usuario</span>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" id="logoutBtn" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="ws-status" id="wsStatusBadge" title="Estado de la conexión en tiempo real">
           <span class="status-dot"></span>
           <span class="status-text">Tiempo Real</span>
@@ -71,8 +119,13 @@
             <div class="lang-select-group">
               <label for="textSourceLang">De:</label>
               <select id="textSourceLang" class="lang-dropdown">
-                <option value="auto">Detectar idioma automáticamente</option>
-                <!-- Opciones cargadas dinámicamente -->
+                <option value="auto" selected>Detectar idioma automáticamente</option>
+                <option value="es">Español</option>
+                <option value="en">Inglés</option>
+                <option value="fr">Francés</option>
+                <option value="de">Alemán</option>
+                <option value="pt">Portugués</option>
+                <option value="it">Italiano</option>
               </select>
               <span class="detected-badge hidden" id="detectedLangTag">Detectado: Español</span>
             </div>
@@ -84,7 +137,12 @@
             <div class="lang-select-group">
               <label for="textTargetLang">A:</label>
               <select id="textTargetLang" class="lang-dropdown">
-                <!-- Opciones cargadas dinámicamente -->
+                <option value="en" selected>Inglés</option>
+                <option value="es">Español</option>
+                <option value="fr">Francés</option>
+                <option value="de">Alemán</option>
+                <option value="pt">Portugués</option>
+                <option value="it">Italiano</option>
               </select>
             </div>
           </div>
@@ -98,6 +156,18 @@
           </div>
         </div>
 
+        <!-- Banner de Límite para Modo Invitado -->
+        <div class="guest-tier-banner" id="guestTierBanner">
+          <div class="guest-banner-text">
+            <span class="guest-pill">Modo Invitado</span>
+            <span>Traducción básica de texto limitada a <strong>150 caracteres</strong>.</span>
+          </div>
+          <button class="btn-guest-unlock" id="guestBannerAuthBtn" type="button">
+            <span>Iniciar Sesión para Texto Ilimitado y Módulos Premium</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+
         <div class="translation-grid">
           <!-- Cuadro de Texto de Origen -->
           <div class="card editor-card source-card">
@@ -109,7 +179,10 @@
             </div>
             <textarea id="sourceText" placeholder="Escribe o pega texto aquí... Se traducirá automáticamente mientras escribes." spellcheck="true"></textarea>
             <div class="editor-footer">
-              <div class="char-count"><span id="sourceCharCount">0</span> caracteres</div>
+              <div class="char-count">
+                <span id="sourceCharCount">0</span>
+                <span id="charLimitLabel"> / 150 caracteres (Invitado)</span>
+              </div>
               <div class="footer-actions">
                 <button class="btn-tool" id="listenSourceBtn" title="Escuchar pronunciación original">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
@@ -149,7 +222,25 @@
       <!-- TAB 2: LIVE SPEECH & AUDIO (STT & TTS)         -->
       <!-- ============================================== -->
       <section class="tab-pane" id="voice-tab">
-        <div class="voice-layout">
+        <!-- Bloqueo para Modo Invitado -->
+        <div class="locked-module-gate" id="voiceLockGate">
+          <div class="card locked-gate-card">
+            <div class="locked-gate-icon">🎙️🔒</div>
+            <span class="locked-tag">Acceso Exclusivo para Usuarios</span>
+            <h3>Traducción de Voz en Vivo</h3>
+            <p>La interpretación simultánea con reconocimiento de voz en vivo y síntesis neuronal es exclusiva para miembros registrados.</p>
+            <ul class="locked-perks-list">
+              <li>✓ Transcripción continua por micrófono sin límite de tiempo</li>
+              <li>✓ Traducción bidireccional instantánea en pantalla</li>
+              <li>✓ Voces neuronales de alta definición con acento nativo</li>
+            </ul>
+            <button class="btn-primary btn-gate-auth" type="button">
+              <span>Iniciar Sesión / Registrarse Gratis</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="voice-layout" id="voiceMainLayout">
           <div class="voice-controls-panel card">
             <div class="voice-hero">
               <div class="mic-orb-container">
@@ -175,11 +266,25 @@
             <div class="voice-settings-row">
               <div class="voice-lang-box">
                 <label>Tu idioma (hablado):</label>
-                <select id="voiceSourceLang" class="lang-dropdown"></select>
+                <select id="voiceSourceLang" class="lang-dropdown">
+                  <option value="es" selected>Español</option>
+                  <option value="en">Inglés</option>
+                  <option value="fr">Francés</option>
+                  <option value="de">Alemán</option>
+                  <option value="pt">Portugués</option>
+                  <option value="it">Italiano</option>
+                </select>
               </div>
               <div class="voice-lang-box">
                 <label>Idioma destino:</label>
-                <select id="voiceTargetLang" class="lang-dropdown"></select>
+                <select id="voiceTargetLang" class="lang-dropdown">
+                  <option value="en" selected>Inglés</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Francés</option>
+                  <option value="de">Alemán</option>
+                  <option value="pt">Portugués</option>
+                  <option value="it">Italiano</option>
+                </select>
               </div>
               <div class="voice-toggle-box">
                 <label class="switch-label">
@@ -232,7 +337,25 @@
       <!-- TAB 3: DOCUMENT TRANSLATION                    -->
       <!-- ============================================== -->
       <section class="tab-pane" id="docs-tab">
-        <div class="docs-layout">
+        <!-- Bloqueo para Modo Invitado -->
+        <div class="locked-module-gate" id="docsLockGate">
+          <div class="card locked-gate-card">
+            <div class="locked-gate-icon">📄🔒</div>
+            <span class="locked-tag">Acceso Exclusivo para Usuarios</span>
+            <h3>Traducción Integral de Documentos</h3>
+            <p>La carga y procesamiento automático de archivos PDF, Word (.docx) y texto sin límite de tamaño requiere una cuenta en LinguaFlow.</p>
+            <ul class="locked-perks-list">
+              <li>✓ Traducción conservando la estructura de párrafos y títulos</li>
+              <li>✓ Generación de documentos listos para descargar en DOCX y TXT</li>
+              <li>✓ Soporte para archivos de hasta 15 MB</li>
+            </ul>
+            <button class="btn-primary btn-gate-auth" type="button">
+              <span>Iniciar Sesión / Registrarse Gratis</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="docs-layout" id="docsMainLayout">
           <div class="card docs-upload-card">
             <div class="docs-header">
               <h2>Traducción Integral de Documentos</h2>
@@ -274,7 +397,14 @@
             <div class="docs-action-bar">
               <div class="docs-lang-group">
                 <label>Traducir a:</label>
-                <select id="docTargetLang" class="lang-dropdown"></select>
+                <select id="docTargetLang" class="lang-dropdown">
+                  <option value="en" selected>Inglés</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Francés</option>
+                  <option value="de">Alemán</option>
+                  <option value="pt">Portugués</option>
+                  <option value="it">Italiano</option>
+                </select>
               </div>
               <button class="btn-primary" id="startDocTranslateBtn" disabled>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -325,26 +455,163 @@
       </section>
 
       <!-- ============================================== -->
-      <!-- TAB 4: HISTORY                                 -->
+      <!-- TAB 4: CAPACITACIONES Y CLASES DE IDIOMAS      -->
       <!-- ============================================== -->
-      <section class="tab-pane" id="history-tab">
-        <div class="history-layout">
-          <div class="history-header">
-            <div>
-              <h2>Historial Reciente</h2>
-              <p>Tus últimas traducciones guardadas en tu sesión.</p>
-            </div>
-            <button class="btn-secondary" id="clearAllHistoryBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              <span>Borrar Historial</span>
+      <section class="tab-pane" id="academy-tab">
+        <!-- Bloqueo para Modo Invitado -->
+        <div class="locked-module-gate" id="academyLockGate">
+          <div class="card locked-gate-card">
+            <div class="locked-gate-icon">🎓🔒</div>
+            <span class="locked-tag">Acceso Exclusivo para Usuarios</span>
+            <h3>Academia y Capacitaciones de Idiomas</h3>
+            <p>Aprende cualquier idioma con lecciones interactivas, entrenamiento de pronunciación por voz y evaluaciones con Inteligencia Artificial.</p>
+            <ul class="locked-perks-list">
+              <li>✓ Cursos interactivos estructurados desde nivel Principiante hasta Avanzado</li>
+              <li>✓ Generador de clases y lecciones especializadas personalizadas</li>
+              <li>✓ Práctica de pronunciación por voz con feedback instantáneo y quizzes interactivos</li>
+            </ul>
+            <button class="btn-primary btn-gate-auth" type="button">
+              <span>Iniciar Sesión / Registrarse Gratis</span>
             </button>
           </div>
+        </div>
 
-          <div class="history-list" id="historyListContainer">
-            <!-- Items generados dinámicamente -->
-            <div class="history-empty" id="historyEmptyState">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <p>Aún no tienes traducciones recientes.</p>
+        <div class="academy-layout" id="academyMainLayout">
+          <!-- Banner Hero de Capacitaciones -->
+          <div class="card academy-hero-card">
+            <div class="academy-hero-content">
+              <div class="academy-badge">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+                <span>LinguaAcademy &bull; Clases Interactivas</span>
+              </div>
+              <h2>Aprende cualquier idioma con Inteligencia Artificial</h2>
+              <p>Capacítate con módulos interactivos, escucha la pronunciación nativa neuronal, practica tu propia voz con el micrófono y evalúa tus conocimientos en tiempo real.</p>
+            </div>
+
+            <!-- Selector del idioma a aprender -->
+            <div class="academy-lang-selector-box">
+              <label for="academyTargetLang">Selecciona el idioma a aprender:</label>
+              <div class="academy-select-wrapper">
+                <span class="academy-globe-icon">🌐</span>
+                <select id="academyTargetLang" class="lang-dropdown">
+                  <!-- Opciones cargadas dinámicamente -->
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Módulos de Clases y Capacitaciones -->
+          <div class="academy-main-grid">
+            <!-- Columna Izquierda: Lista de Módulos / Niveles -->
+            <div class="academy-modules-sidebar">
+              <h3 class="academy-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Módulos de Capacitación</span>
+              </h3>
+              <div class="academy-modules-list" id="academyModulesList">
+                <!-- Se cargan dinámicamente -->
+              </div>
+
+              <!-- Creador de clase personalizada -->
+              <div class="card custom-lesson-card">
+                <div class="custom-lesson-header">
+                  <span class="custom-sparkle-icon">✨</span>
+                  <h4>¿Quieres aprender otro tema?</h4>
+                </div>
+                <p>Crea una clase especializada a medida sobre lo que necesites practicar hoy.</p>
+                <form id="customLessonForm" class="custom-lesson-form">
+                  <input type="text" id="customLessonTopic" placeholder="Ej: En el banco, Medicina, Programación..." required>
+                  <button type="submit" class="btn-custom-lesson" id="customLessonBtn">
+                    <span>Crear Clase Personalizada</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Vista de la Clase Activa -->
+            <div class="academy-lesson-content">
+              <!-- Encabezado de la Clase -->
+              <div class="card lesson-active-header" id="lessonActiveHeader">
+                <div class="lesson-header-top">
+                  <span class="lesson-level-badge" id="lessonLevelBadge">Principiante (A1)</span>
+                  <div class="lesson-lang-indicator">
+                    <span>Idioma objetivo: </span>
+                    <strong id="lessonLangTargetName">Inglés</strong>
+                  </div>
+                </div>
+                <h2 id="lessonTitle">Fundamentos y Saludos</h2>
+                <p id="lessonDescription">Aprende a presentarte, saludar cordialmente y utilizar fórmulas de cortesía esenciales.</p>
+              </div>
+
+              <!-- Pestañas de la Clase: Modo Estudio (Frases) vs Evaluación (Quiz) -->
+              <div class="lesson-view-tabs">
+                <button class="lesson-tab-btn active" id="tabStudyModeBtn" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  </svg>
+                  <span>1. Módulo de Estudio (Frases y Audio)</span>
+                </button>
+                <button class="lesson-tab-btn" id="tabQuizModeBtn" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                  <span>2. Quiz y Evaluación</span>
+                </button>
+              </div>
+
+              <!-- VISTA 1: MODO ESTUDIO (Tarjetas de Frases y Pronunciación) -->
+              <div class="lesson-view-pane active" id="lessonStudyPane">
+                <div class="phrases-cards-grid" id="phrasesCardsGrid">
+                  <!-- Tarjetas generadas dinámicamente -->
+                </div>
+              </div>
+
+              <!-- VISTA 2: EVALUACIÓN / QUIZ INTERACTIVO -->
+              <div class="lesson-view-pane hidden" id="lessonQuizPane">
+                <div class="card quiz-card" id="quizCard">
+                  <div class="quiz-header">
+                    <div class="quiz-badge">Evaluación de Conocimiento</div>
+                    <span class="quiz-hint-text">Elige la respuesta correcta para aprobar la clase</span>
+                  </div>
+                  <h3 class="quiz-question" id="quizQuestion">¿Cuál es la frase correcta?</h3>
+                  <div class="quiz-options-grid" id="quizOptionsGrid">
+                    <!-- Opciones generadas -->
+                  </div>
+                  <div class="quiz-feedback-box hidden" id="quizFeedbackBox">
+                    <div class="quiz-feedback-icon" id="quizFeedbackIcon">✓</div>
+                    <div class="quiz-feedback-text" id="quizFeedbackText">¡Excelente respuesta!</div>
+                  </div>
+                  <div class="quiz-tip-box" id="quizTipBox">
+                    <strong>💡 Consejo pedagógico:</strong>
+                    <span id="quizTipText">Consejo de uso contextual.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notificación flotante de Pronunciación del micrófono -->
+              <div class="pronunciation-feedback-card hidden" id="pronunciationFeedbackCard">
+                <div class="pronunciation-feedback-header">
+                  <span class="p-title">Evaluación de tu voz</span>
+                  <button class="icon-subtle-btn" id="closePronunciationBtn" type="button">&times;</button>
+                </div>
+                <div class="pronunciation-result-text" id="pronunciationResultText">
+                  "Tu pronunciación aquí"
+                </div>
+                <div class="pronunciation-score-badge" id="pronunciationScoreBadge">
+                  ¡Excelente! 🎉
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -356,6 +623,160 @@
     <footer class="app-footer">
       <span>LinguaFlow v1.0.0 &bull; Arquitectura con FastAPI, WebSockets y Motores de IA</span>
     </footer>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL DE AUTENTICACIÓN (LOGIN & REGISTRO)      -->
+  <!-- ============================================== -->
+  <div class="auth-modal-backdrop hidden" id="authModalBackdrop">
+    <div class="auth-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+      <!-- Botón cerrar modal -->
+      <button class="modal-close-btn" id="closeAuthModalBtn" type="button" title="Cerrar ventana">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="auth-modal-header">
+        <div class="auth-brand-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>LinguaFlow Account</span>
+        </div>
+        <h2 id="authModalTitle">Acceso a tu Cuenta</h2>
+        <p class="auth-modal-subtitle" id="authModalSubtitle">Inicia sesión o regístrate para acceder a tus traducciones.</p>
+      </div>
+
+      <!-- Pestañas del Modal (Iniciar Sesión / Registro) -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tabLoginBtn" type="button">Iniciar Sesión</button>
+        <button class="auth-tab-btn" id="tabRegisterBtn" type="button">Crear Cuenta</button>
+      </div>
+
+      <!-- Alerta de Notificación/Error en el Modal -->
+      <div class="auth-alert hidden" id="authAlertBox">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="authAlertMessage">Mensaje de error</span>
+      </div>
+
+      <!-- FORMULARIO 1: INICIAR SESIÓN -->
+      <form class="auth-form" id="loginForm">
+        <div class="form-group">
+          <label for="loginIdentifier">Usuario o Correo Electrónico</label>
+          <div class="input-with-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <input type="text" id="loginIdentifier" placeholder="Ej: usuario o juan@correo.com" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Contraseña</label>
+          <div class="input-with-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input type="password" id="loginPassword" placeholder="Tu contraseña" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pwd" data-target="loginPassword" title="Mostrar/ocultar contraseña">
+              <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="loginSubmitBtn">
+          <span class="btn-text">Iniciar Sesión</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <p class="auth-switch-text">
+          ¿No tienes una cuenta? <a href="#" id="linkSwitchToRegister">Crear cuenta gratis</a>
+        </p>
+      </form>
+
+      <!-- FORMULARIO 2: REGISTRO DE NUEVO USUARIO -->
+      <form class="auth-form hidden" id="registerForm">
+        <div class="form-group">
+          <label for="regFullName">Nombre Completo</label>
+          <div class="input-with-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <input type="text" id="regFullName" placeholder="Ej: Juan Pérez" required autocomplete="name">
+          </div>
+        </div>
+
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="regUsername">Nombre de Usuario</label>
+            <div class="input-with-icon">
+              <span class="input-prefix">@</span>
+              <input type="text" id="regUsername" placeholder="juanperez" required autocomplete="username" pattern="[a-zA-Z0-9_.-]{3,30}" title="Mínimo 3 caracteres">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="regEmail">Correo Electrónico</label>
+            <div class="input-with-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <input type="email" id="regEmail" placeholder="juan@correo.com" required autocomplete="email">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="regPassword">Contraseña</label>
+            <div class="input-with-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password">
+              <button type="button" class="btn-toggle-pwd" data-target="regPassword" title="Mostrar/ocultar contraseña">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="regPasswordConfirm">Confirmar Contraseña</label>
+            <div class="input-with-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="regPasswordConfirm" placeholder="Repite la contraseña" minlength="6" required autocomplete="new-password">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="registerSubmitBtn">
+          <span class="btn-text">Crear Cuenta Gratuita</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <p class="auth-switch-text">
+          ¿Ya tienes una cuenta? <a href="#" id="linkSwitchToLogin">Iniciar sesión</a>
+        </p>
+      </form>
+    </div>
   </div>
 
   <!-- Contenedor de Notificaciones Toast -->

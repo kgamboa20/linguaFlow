@@ -2,9 +2,12 @@ import json
 import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.services.translation_service import translation_service
+from app.services.db_service import db_service
 
 logger = logging.getLogger("linguaflow.websocket")
 router = APIRouter(tags=["WebSockets"])
+
+GUEST_CHAR_LIMIT = 150
 
 @router.websocket("/ws/translate")
 async def websocket_translation_endpoint(websocket: WebSocket):
@@ -23,6 +26,7 @@ async def websocket_translation_endpoint(websocket: WebSocket):
                 text = payload.get("text", "")
                 source_lang = payload.get("source_lang", "auto")
                 target_lang = payload.get("target_lang", "en")
+                token = payload.get("token")
 
                 if not text or not text.strip():
                     await websocket.send_json({
@@ -30,6 +34,17 @@ async def websocket_translation_endpoint(websocket: WebSocket):
                         "translated_text": "",
                         "detected_lang": source_lang,
                         "status": "empty"
+                    })
+                    continue
+
+                # Validar sesión de usuario o aplicar límite de 150 caracteres para invitados
+                user = db_service.get_user_by_token(token) if token else None
+                if not user and len(text) > GUEST_CHAR_LIMIT:
+                    await websocket.send_json({
+                        "original_text": text,
+                        "translated_text": "",
+                        "error": f"Modo Invitado: Límite de {GUEST_CHAR_LIMIT} caracteres alcanzado. Inicia sesión para traducir sin límite.",
+                        "status": "limit_reached"
                     })
                     continue
 
