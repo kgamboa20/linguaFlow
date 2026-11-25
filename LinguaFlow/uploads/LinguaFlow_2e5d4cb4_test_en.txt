@@ -1,2 +1,0 @@
-LinguaFlow allows you to translate documents quickly and safely.
-This is the second line of the test document.
