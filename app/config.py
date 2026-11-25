@@ -18,10 +18,15 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     # Normalización para compatibilidad con librerías modernas de Python
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Configuración de Microsoft Translator (Azure AI Translator)
-AZURE_TRANSLATOR_KEY = os.environ.get("AZURE_TRANSLATOR_KEY", os.environ.get("TRANSLATOR_KEY", "")).strip()
-AZURE_TRANSLATOR_REGION = os.environ.get("AZURE_TRANSLATOR_REGION", os.environ.get("TRANSLATOR_REGION", "global")).strip()
-AZURE_TRANSLATOR_ENDPOINT = os.environ.get("AZURE_TRANSLATOR_ENDPOINT", "https://api.cognitive.microsofttranslator.com").strip().rstrip("/")
+# Configuración de DeepL API (DeepL API Free & Pro)
+DEEPL_API_KEY = os.environ.get("DEEPL_API_KEY", os.environ.get("DEEPL_AUTH_KEY", "")).strip()
+DEEPL_API_ENDPOINT = os.environ.get("DEEPL_API_ENDPOINT", "").strip().rstrip("/")
+# Si la key termina en :fx o no se especifica endpoint, se usa por defecto la API Free
+if not DEEPL_API_ENDPOINT:
+    if DEEPL_API_KEY.endswith(":fx"):
+        DEEPL_API_ENDPOINT = "https://api-free.deepl.com/v2/translate"
+    else:
+        DEEPL_API_ENDPOINT = "https://api-free.deepl.com/v2/translate" if not DEEPL_API_KEY else "https://api.deepl.com/v2/translate"
 
 # Configuración de Correo Electrónico (SMTP)
 SMTP_HOST = os.environ.get("SMTP_HOST", "")

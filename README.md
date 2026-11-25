@@ -1,13 +1,13 @@
 # LinguaFlow 🌐⚡
 > **Plataforma de Traducción Multimodal en Tiempo Real & LinguaAcademy**  
-> Desarrollado con FastAPI, WebSockets, Microsoft Translator (Azure Cognitive Services), Edge Neural TTS, Autenticación Segura y Procesamiento de Documentos.
+> Desarrollado con FastAPI, WebSockets, DeepL API (Free / Pro), Edge Neural TTS, Autenticación Segura y Procesamiento de Documentos.
 
 ---
 
 ## 🚀 Características Principales
 
-1. **Traducción con Microsoft Translator (Azure)**:
-   - Integración oficial con **Microsoft Translator (Azure AI Translator / Cognitive Services)** como motor principal de alta precisión.
+1. **Traducción con DeepL API (Free & Pro)**:
+   - Integración oficial con **DeepL API (Free & Pro)** como motor principal de traducción neuronal de alta fidelidad.
    - Rotación y respaldo automático transparente a matriz multi-proveedor de alta disponibilidad.
    - Detección automática nativa del idioma de origen y soporte integral para más de 18 idiomas.
 
@@ -144,9 +144,8 @@ Configura las siguientes variables en el panel de **Render** o en un archivo `.e
 
 | Variable | Descripción | Valor por Defecto / Ejemplo |
 |---|---|---|
-| `AZURE_TRANSLATOR_KEY` | Clave de suscripción de Azure Translator (Cognitive Services) | `tu-azure-key` |
-| `AZURE_TRANSLATOR_REGION` | Región del recurso de Azure Translator | `global`, `eastus`, `brazilsouth`, etc. |
-| `AZURE_TRANSLATOR_ENDPOINT` | Endpoint de Azure Translator | `https://api.cognitive.microsofttranslator.com` |
+| `DEEPL_API_KEY` | Clave de autenticación de DeepL API (Free termina en `:fx`, o Pro) | `tu-deepl-key:fx` |
+| `DEEPL_API_ENDPOINT` | Endpoint de DeepL (opcional, auto-detecta Free vs Pro) | `https://api-free.deepl.com/v2/translate` |
 | `DATABASE_URL` | Conexión PostgreSQL en la nube | `postgresql://user:pass@host/dbname` |
 | `SMTP_HOST` | Host SMTP para envío de correos (bienvenida y recuperación) | `smtp.gmail.com` |
 | `SMTP_PORT` | Puerto SMTP | `587` |

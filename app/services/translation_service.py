@@ -5,9 +5,8 @@ import requests
 from langdetect import detect, DetectorFactory
 from app.config import (
     SUPPORTED_LANGUAGES,
-    AZURE_TRANSLATOR_KEY,
-    AZURE_TRANSLATOR_REGION,
-    AZURE_TRANSLATOR_ENDPOINT
+    DEEPL_API_KEY,
+    DEEPL_API_ENDPOINT
 )
 
 # Reproducibilidad en detección de idioma
@@ -20,21 +19,31 @@ LANG_MAP = {
     "auto": "auto"
 }
 
-# Mapeo de códigos ISO para Microsoft Translator (Azure)
-LANG_MAP_AZURE = {
-    "zh": "zh-Hans",
-    "zh-CN": "zh-Hans"
+# Mapeo de códigos ISO destino para DeepL API
+LANG_MAP_DEEPL_TARGET = {
+    "en": "EN-US",
+    "pt": "PT-PT",
+    "zh": "ZH",
+    "es": "ES",
+    "fr": "FR",
+    "de": "DE",
+    "it": "IT",
+    "ru": "RU",
+    "ja": "JA",
+    "ko": "KO",
+    "ar": "AR",
+    "nl": "NL",
+    "pl": "PL",
+    "tr": "TR",
+    "uk": "UK",
+    "sv": "SV",
+    "el": "EL"
 }
 
-# Mapeo inverso de detección de Azure a códigos internos
-REVERSE_LANG_MAP_AZURE = {
-    "zh-hans": "zh",
-    "zh-hant": "zh",
-    "pt-pt": "pt",
-    "pt-br": "pt",
-    "en-us": "en",
-    "en-gb": "en",
-    "es-es": "es"
+# Idiomas origen soportados oficialmente por DeepL
+DEEPL_SUPPORTED_SOURCES = {
+    "es", "en", "fr", "de", "it", "pt", "ru", "zh", "ja", "ko",
+    "ar", "nl", "pl", "tr", "uk", "sv", "el"
 }
 
 # Mapeo para MyMemory
@@ -56,74 +65,65 @@ class TranslationService:
             "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
         })
 
-        # Configuración de Microsoft Translator (Azure Cognitive Services - Motor principal)
-        self.azure_key = (AZURE_TRANSLATOR_KEY or "").strip()
-        self.azure_region = (AZURE_TRANSLATOR_REGION or "global").strip()
-        self.azure_endpoint = (AZURE_TRANSLATOR_ENDPOINT or "https://api.cognitive.microsofttranslator.com").strip().rstrip("/")
+        # Configuración de DeepL API (DeepL API Free & Pro - Motor principal)
+        self.deepl_key = (DEEPL_API_KEY or "").strip()
+        self.deepl_endpoint = (DEEPL_API_ENDPOINT or "https://api-free.deepl.com/v2/translate").strip()
 
-        if self.azure_key:
-            logger.info("Motor Microsoft Translator (Azure) activo (Región: %s, Endpoint: %s).", self.azure_region, self.azure_endpoint)
+        if self.deepl_key:
+            tier = "Free" if ":fx" in self.deepl_key or "api-free" in self.deepl_endpoint else "Pro"
+            logger.info("Motor DeepL API (%s) activo exitosamente (Endpoint: %s).", tier, self.deepl_endpoint)
         else:
-            logger.info("Microsoft Translator (Azure) en modo pasivo (sin AZURE_TRANSLATOR_KEY). Motores secundarios activos.")
+            logger.info("DeepL API en modo pasivo (sin DEEPL_API_KEY). Motores secundarios activos.")
 
-    def _translate_with_azure(self, text: str, source_lang: str, target_lang: str) -> Optional[Tuple[str, str]]:
-        """Traduce usando Microsoft Translator (Azure) como motor principal oficial."""
-        if not self.azure_key:
+    def _translate_with_deepl(self, text: str, source_lang: str, target_lang: str) -> Optional[Tuple[str, str]]:
+        """Traduce usando DeepL API Free / Pro como motor principal oficial."""
+        if not self.deepl_key:
             return None
 
-        tgt = LANG_MAP_AZURE.get(target_lang, target_lang)
+        clean_tgt = target_lang.lower().strip()
+        deepl_tgt = LANG_MAP_DEEPL_TARGET.get(clean_tgt)
+        if not deepl_tgt:
+            # Idiomas no soportados nativamente por DeepL (ej. Hindi 'hi') van a motores de respaldo
+            return None
 
-        # Si el idioma origen está definido y no es auto
-        src = None
-        if source_lang and source_lang != "auto":
-            src = LANG_MAP_AZURE.get(source_lang, source_lang)
-            if src == tgt:
-                return text, source_lang
-
-        # Construir endpoint y parámetros de Azure Translator v3.0
-        url = f"{self.azure_endpoint}/translate"
-        params = {
-            "api-version": "3.0",
-            "to": tgt
-        }
-        if src:
-            params["from"] = src
+        clean_src = source_lang.lower().strip() if source_lang else "auto"
+        if clean_src != "auto" and clean_src == clean_tgt:
+            return text, clean_src
 
         headers = {
-            "Ocp-Apim-Subscription-Key": self.azure_key,
-            "Content-Type": "application/json; charset=UTF-8"
+            "Authorization": f"DeepL-Auth-Key {self.deepl_key}",
+            "Content-Type": "application/json"
         }
-        if self.azure_region and self.azure_region.lower() != "global":
-            headers["Ocp-Apim-Subscription-Region"] = self.azure_region
 
-        body = [{"Text": text}]
+        payload: Dict[str, Any] = {
+            "text": [text],
+            "target_lang": deepl_tgt
+        }
+
+        # Si el origen es un idioma soportado por DeepL y no es auto
+        if clean_src != "auto" and clean_src in DEEPL_SUPPORTED_SOURCES:
+            payload["source_lang"] = clean_src.upper()
 
         try:
-            resp = self.session.post(url, params=params, headers=headers, json=body, timeout=5)
+            resp = self.session.post(self.deepl_endpoint, headers=headers, json=payload, timeout=6)
             if resp.status_code == 200:
                 data = resp.json()
-                if isinstance(data, list) and len(data) > 0:
-                    item = data[0]
-                    translations = item.get("translations", [])
-                    if translations and len(translations) > 0:
-                        translated_text = translations[0].get("text", "")
-
-                        # Idioma detectado automáticamente por Azure si fue auto
-                        detected = source_lang if source_lang != "auto" else "es"
-                        if "detectedLanguage" in item:
-                            detected_azure = item["detectedLanguage"].get("language", "")
-                            detected = REVERSE_LANG_MAP_AZURE.get(detected_azure.lower(), detected_azure)
-
-                        if translated_text and translated_text.strip():
-                            return translated_text, detected
+                translations = data.get("translations", [])
+                if translations and len(translations) > 0:
+                    item = translations[0]
+                    translated_text = item.get("text", "")
+                    detected_deepl = item.get("detected_source_language", clean_src if clean_src != "auto" else "es")
+                    detected = detected_deepl.lower()
+                    if translated_text and translated_text.strip():
+                        return translated_text, detected
             else:
                 logger.warning(
-                    "Azure Translator devolvió estado %s: %s. Alternando automáticamente a motores de respaldo.",
+                    "DeepL API devolvió código %s (%s). Alternando automáticamente a motores de respaldo.",
                     resp.status_code, resp.text[:120]
                 )
                 return None
         except Exception as e:
-            logger.warning("Error de conexión con Microsoft Translator Azure (%s). Alternando a motores de respaldo.", e)
+            logger.warning("Error de conexión con DeepL API (%s). Alternando a motores de respaldo.", e)
             return None
 
         return None
@@ -275,10 +275,10 @@ class TranslationService:
                 translated_chunks.append(chunk)
                 continue
 
-            # 1. Intentar con Microsoft Translator (Azure) como motor principal
-            azure_result = self._translate_with_azure(chunk, source_lang, target_lang)
-            if azure_result:
-                trans_part, det_part = azure_result
+            # 1. Intentar con DeepL API como motor principal
+            deepl_result = self._translate_with_deepl(chunk, source_lang, target_lang)
+            if deepl_result:
+                trans_part, det_part = deepl_result
             else:
                 # 2. Respaldo a matriz de motores secundarios
                 trans_part, det_part = self._translate_with_engines(chunk, source_lang, target_lang)
