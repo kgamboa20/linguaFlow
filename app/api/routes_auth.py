@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Header, Depends, status
 from pydantic import BaseModel, Field, EmailStr, validator
 from app.services.db_service import db_service
+from app.services.email_service import email_service
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
@@ -38,6 +39,13 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     username_or_email: str = Field(..., min_length=1, description="Nombre de usuario o correo electrónico")
     password: str = Field(..., min_length=1, description="Contraseña de la cuenta")
+
+class ForgotPasswordRequest(BaseModel):
+    identifier: str = Field(..., min_length=2, max_length=100, description="Nombre de usuario o correo electrónico")
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=10, description="Token de restablecimiento de contraseña")
+    new_password: str = Field(..., min_length=6, max_length=100, description="Nueva contraseña")
 
 class UserData(BaseModel):
     id: int
@@ -87,7 +95,7 @@ def get_optional_user(authorization: Optional[str] = Header(None)) -> Optional[D
 async def register(req: RegisterRequest):
     """
     Registra una nueva cuenta de usuario con contraseña cifrada.
-    Inicia sesión automáticamente generando un token seguro.
+    Envía un correo de bienvenida y requiere que el usuario inicie sesión.
     """
     try:
         user = db_service.create_user(
@@ -96,11 +104,22 @@ async def register(req: RegisterRequest):
             password=req.password,
             full_name=req.full_name
         )
-        token = db_service.create_session(user["id"])
+        
+        # Enviar correo de bienvenida al nuevo usuario
+        try:
+            await email_service.send_welcome_email(
+                to_email=user["email"],
+                full_name=user.get("full_name") or user["username"],
+                username=user["username"]
+            )
+        except Exception as mail_err:
+            print(f"Aviso al enviar correo de bienvenida: {mail_err}")
+
+        # No se retorna token para que el usuario sea redirigido a iniciar sesión
         return AuthResponse(
             status="ok",
-            message=f"¡Bienvenido a LinguaFlow, {user['full_name']}!",
-            token=token,
+            message="¡Cuenta creada con éxito! Te hemos enviado un correo de bienvenida. Por favor inicia sesión con tus credenciales.",
+            token=None,
             user=UserData(**user)
         )
     except ValueError as e:
@@ -128,6 +147,53 @@ async def login(req: LoginRequest):
         token=token,
         user=UserData(**user)
     )
+
+@router.post("/forgot-password", summary="Solicitud de recuperación de cuenta y contraseña")
+async def forgot_password(req: ForgotPasswordRequest):
+    """
+    Localiza al usuario por nombre de usuario o correo.
+    Envía un correo con el nombre de usuario y el enlace de restablecimiento.
+    """
+    clean_id = req.identifier.strip()
+    user = db_service.get_user_by_username_or_email(clean_id)
+    if user:
+        token = db_service.create_password_reset(user["id"])
+        try:
+            await email_service.send_recovery_email(
+                to_email=user["email"],
+                username=user["username"],
+                reset_token=token
+            )
+        except Exception as mail_err:
+            print(f"Aviso al enviar correo de recuperación: {mail_err}")
+
+    return {
+        "status": "ok",
+        "message": "Si los datos ingresados corresponden a una cuenta registrada, te hemos enviado un correo con tu nombre de usuario e instrucciones para restablecer tu contraseña."
+    }
+
+@router.post("/reset-password", summary="Restablecer contraseña mediante token")
+async def reset_password(req: ResetPasswordRequest):
+    """
+    Valida el token de recuperación y actualiza la contraseña de la cuenta.
+    """
+    if len(req.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña debe tener al menos 6 caracteres."
+        )
+
+    success = db_service.reset_password_with_token(req.token, req.new_password)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El código o enlace de recuperación es inválido, ya fue utilizado o ha expirado. Por favor solicita uno nuevo."
+        )
+
+    return {
+        "status": "ok",
+        "message": "¡Tu contraseña ha sido restablecida exitosamente! Ahora puedes iniciar sesión con tu nueva contraseña."
+    }
 
 @router.get("/me", summary="Obtener usuario en sesión")
 async def get_current_user_profile(user: Dict[str, Any] = Depends(get_current_user)):

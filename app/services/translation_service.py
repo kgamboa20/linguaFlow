@@ -1,9 +1,17 @@
 import asyncio
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 import requests
 from langdetect import detect, DetectorFactory
-from app.config import SUPPORTED_LANGUAGES
+from app.config import SUPPORTED_LANGUAGES, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+
+# Importación condicional de boto3 para Amazon Translate
+try:
+    import boto3
+    from botocore.config import Config as BotoConfig
+    BOTO3_AVAILABLE = True
+except ImportError:
+    BOTO3_AVAILABLE = False
 
 # Reproducibilidad en detección de idioma
 DetectorFactory.seed = 0
@@ -33,6 +41,49 @@ class TranslationService:
             "Accept": "*/*",
             "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
         })
+
+        # Inicialización de Amazon Translate (Motor principal)
+        self.amazon_client = None
+        if BOTO3_AVAILABLE:
+            try:
+                boto_config = BotoConfig(connect_timeout=4, read_timeout=6, retries={'max_attempts': 2})
+                if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+                    self.amazon_client = boto3.client(
+                        "translate",
+                        aws_access_key_id=AWS_ACCESS_KEY_ID,
+                        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                        region_name=AWS_REGION,
+                        config=boto_config
+                    )
+                    logger.info("Motor Amazon Translate configurado con credenciales AWS en región %s.", AWS_REGION)
+                else:
+                    self.amazon_client = boto3.client("translate", region_name=AWS_REGION, config=boto_config)
+                    logger.info("Motor Amazon Translate inicializado con credenciales de entorno AWS (%s).", AWS_REGION)
+            except Exception as e:
+                logger.warning("No se pudo iniciar cliente Amazon Translate: %s. Se usarán motores secundarios.", e)
+
+    def _translate_with_amazon(self, text: str, source_lang: str, target_lang: str) -> Optional[Tuple[str, str]]:
+        """Traduce usando Amazon Translate como motor principal oficial."""
+        if not self.amazon_client:
+            return None
+
+        src = "auto" if source_lang == "auto" else source_lang
+        tgt = target_lang
+
+        try:
+            response = self.amazon_client.translate_text(
+                Text=text,
+                SourceLanguageCode=src,
+                TargetLanguageCode=tgt
+            )
+            translated = response.get("TranslatedText")
+            detected = response.get("SourceLanguageCode", src if src != "auto" else "es")
+            if translated and translated.strip():
+                return translated, detected
+        except Exception as e:
+            logger.warning("Aviso en Amazon Translate (%s). Alternando automáticamente a motores de respaldo.", e)
+            return None
+        return None
 
     def detect_language(self, text: str) -> str:
         """Detecta el código de idioma de un texto como salvaguarda."""
@@ -172,7 +223,14 @@ class TranslationService:
                 translated_chunks.append(chunk)
                 continue
 
-            trans_part, det_part = self._translate_with_engines(chunk, source_lang, target_lang)
+            # 1. Intentar con Amazon Translate como motor principal
+            amazon_result = self._translate_with_amazon(chunk, source_lang, target_lang)
+            if amazon_result:
+                trans_part, det_part = amazon_result
+            else:
+                # 2. Respaldo a matriz de motores secundarios
+                trans_part, det_part = self._translate_with_engines(chunk, source_lang, target_lang)
+
             translated_chunks.append(trans_part)
             if det_part and det_part != "auto":
                 detected_lang = det_part

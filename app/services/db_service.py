@@ -96,10 +96,21 @@ class DatabaseService:
                             expires_at TIMESTAMP NOT NULL
                         );
                     """)
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS password_resets (
+                            id SERIAL PRIMARY KEY,
+                            token VARCHAR(255) UNIQUE NOT NULL,
+                            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            expires_at TIMESTAMP NOT NULL,
+                            used INTEGER DEFAULT 0
+                        );
+                    """)
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users (LOWER(username));")
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));")
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);")
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_resets_token ON password_resets (token);")
                 logger.info("Tablas de PostgreSQL verificadas e inicializadas con éxito.")
             else:
                 with self.get_cursor() as cur:
@@ -123,10 +134,22 @@ class DatabaseService:
                             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                         )
                     """)
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS password_resets (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            token TEXT UNIQUE NOT NULL,
+                            user_id INTEGER NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            expires_at TIMESTAMP NOT NULL,
+                            used INTEGER DEFAULT 0,
+                            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                        )
+                    """)
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)")
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)")
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token)")
                     cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id)")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_resets_token ON password_resets (token)")
                 logger.info("Tablas de SQLite verificadas e inicializadas en %s", self.db_path)
         except Exception as e:
             logger.error("Error al inicializar la base de datos: %s", e)
@@ -324,6 +347,66 @@ class DatabaseService:
         with self.get_cursor() as cur:
             cur.execute(self._format_query(sql), (token,))
             return cur.rowcount > 0
+
+    # -------------------------------------------------------------
+    # Recuperación de Cuenta y Contraseña
+    # -------------------------------------------------------------
+    def create_password_reset(self, user_id: int, duration_hours: int = 24) -> str:
+        """Genera un token seguro para recuperación de contraseña."""
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=duration_hours)
+        param_expires = expires_at if self.is_postgres else expires_at.isoformat()
+
+        # Invalidar tokens anteriores no usados
+        sql_invalidate = "UPDATE password_resets SET used = 1 WHERE user_id = ? AND used = 0"
+        sql_insert = "INSERT INTO password_resets (token, user_id, expires_at, used) VALUES (?, ?, ?, 0)"
+
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql_invalidate), (user_id,))
+            cur.execute(self._format_query(sql_insert), (token, user_id, param_expires))
+
+        return token
+
+    def verify_password_reset_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """Verifica si un token de recuperación es válido y vigente."""
+        if not token:
+            return None
+
+        now = datetime.utcnow()
+        param_now = now if self.is_postgres else now.isoformat()
+
+        sql = """
+            SELECT pr.token, pr.user_id, pr.expires_at, pr.used, u.id, u.username, u.email, u.full_name
+            FROM password_resets pr
+            JOIN users u ON pr.user_id = u.id
+            WHERE pr.token = ? AND pr.used = 0 AND pr.expires_at > ?
+        """
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql), (token, param_now))
+            row = cur.fetchone()
+            if row:
+                return dict(row)
+            return None
+
+    def reset_password_with_token(self, token: str, new_password: str) -> bool:
+        """Restablece la contraseña de un usuario mediante su token y revoca sesiones anteriores."""
+        reset_info = self.verify_password_reset_token(token)
+        if not reset_info:
+            return False
+
+        user_id = reset_info["user_id"]
+        pwd_hash, salt = self.hash_password(new_password)
+
+        sql_update_user = "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?"
+        sql_mark_used = "UPDATE password_resets SET used = 1 WHERE token = ?"
+        sql_delete_sessions = "DELETE FROM sessions WHERE user_id = ?"
+
+        with self.get_cursor() as cur:
+            cur.execute(self._format_query(sql_update_user), (pwd_hash, salt, user_id))
+            cur.execute(self._format_query(sql_mark_used), (token,))
+            cur.execute(self._format_query(sql_delete_sessions), (user_id,))
+
+        return True
 
 # Instancia singleton del servicio de base de datos
 db_service = DatabaseService()

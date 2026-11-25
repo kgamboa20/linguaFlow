@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const openAuthModalBtn = document.getElementById("openAuthModalBtn");
   const userProfileMenu = document.getElementById("userProfileMenu");
   const userProfileBtn = document.getElementById("userProfileBtn");
+  const userOnlineDot = document.getElementById("userOnlineDot");
   const userDropdownCard = document.getElementById("userDropdownCard");
   const userAvatarInitial = document.getElementById("userAvatarInitial");
   const userDisplayName = document.getElementById("userDisplayName");
@@ -151,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginPassword = document.getElementById("loginPassword");
   const loginSubmitBtn = document.getElementById("loginSubmitBtn");
   const linkSwitchToRegister = document.getElementById("linkSwitchToRegister");
+  const linkForgotPassword = document.getElementById("linkForgotPassword");
 
   // Formulario Registro
   const registerForm = document.getElementById("registerForm");
@@ -161,6 +163,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const regPasswordConfirm = document.getElementById("regPasswordConfirm");
   const registerSubmitBtn = document.getElementById("registerSubmitBtn");
   const linkSwitchToLogin = document.getElementById("linkSwitchToLogin");
+  const linkForgotFromRegister = document.getElementById("linkForgotFromRegister");
+
+  // Formulario Recuperación de Cuenta / Contraseña
+  const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+  const recoveryIdentifier = document.getElementById("recoveryIdentifier");
+  const recoverySubmitBtn = document.getElementById("recoverySubmitBtn");
+  const linkBackToLogin = document.getElementById("linkBackToLogin");
+
+  // Formulario Reset Contraseña
+  const resetPasswordForm = document.getElementById("resetPasswordForm");
+  const resetTokenInput = document.getElementById("resetTokenInput");
+  const newPasswordInput = document.getElementById("newPasswordInput");
+  const confirmNewPasswordInput = document.getElementById("confirmNewPasswordInput");
+  const resetPasswordSubmitBtn = document.getElementById("resetPasswordSubmitBtn");
+  const linkCancelReset = document.getElementById("linkCancelReset");
 
   // ==========================================
   // Inicialización del Tema (Dark / Light)
@@ -1151,6 +1168,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state.user) {
       openAuthModalBtn.classList.add("hidden");
       userProfileMenu.classList.remove("hidden");
+      if (userOnlineDot) userOnlineDot.classList.remove("hidden");
 
       const displayName = state.user.full_name || state.user.username || "Usuario";
       const initial = displayName.trim().charAt(0).toUpperCase();
@@ -1190,6 +1208,7 @@ document.addEventListener("DOMContentLoaded", () => {
       userProfileMenu.classList.add("hidden");
       userDropdownCard.classList.add("hidden");
       userProfileMenu.classList.remove("open");
+      if (userOnlineDot) userOnlineDot.classList.add("hidden");
 
       // Mostrar candados en pestañas
       if (lockIconVoice) lockIconVoice.classList.remove("hidden");
@@ -1230,26 +1249,48 @@ document.addEventListener("DOMContentLoaded", () => {
     hideAuthAlert();
     loginForm.reset();
     registerForm.reset();
+    if (forgotPasswordForm) forgotPasswordForm.reset();
+    if (resetPasswordForm) resetPasswordForm.reset();
   }
 
   function switchAuthTab(tabName) {
     hideAuthAlert();
+    loginForm.classList.add("hidden");
+    registerForm.classList.add("hidden");
+    if (forgotPasswordForm) forgotPasswordForm.classList.add("hidden");
+    if (resetPasswordForm) resetPasswordForm.classList.add("hidden");
+
+    tabLoginBtn.classList.remove("active");
+    tabRegisterBtn.classList.remove("active");
+
+    const authTabs = document.querySelector(".auth-tabs");
+
     if (tabName === "login") {
+      if (authTabs) authTabs.classList.remove("hidden");
       tabLoginBtn.classList.add("active");
-      tabRegisterBtn.classList.remove("active");
       loginForm.classList.remove("hidden");
-      registerForm.classList.add("hidden");
       authModalTitle.textContent = "Acceso a tu Cuenta";
-      authModalSubtitle.textContent = "Inicia sesión para acceder a tus traducciones.";
+      authModalSubtitle.textContent = "Inicia sesión para acceder a todas las funciones.";
       setTimeout(() => loginIdentifier.focus(), 50);
-    } else {
+    } else if (tabName === "register") {
+      if (authTabs) authTabs.classList.remove("hidden");
       tabRegisterBtn.classList.add("active");
-      tabLoginBtn.classList.remove("active");
       registerForm.classList.remove("hidden");
-      loginForm.classList.add("hidden");
       authModalTitle.textContent = "Crear Cuenta Nueva";
       authModalSubtitle.textContent = "Únete a LinguaFlow gratis en pocos segundos.";
       setTimeout(() => regFullName.focus(), 50);
+    } else if (tabName === "forgot") {
+      if (authTabs) authTabs.classList.add("hidden");
+      if (forgotPasswordForm) forgotPasswordForm.classList.remove("hidden");
+      authModalTitle.textContent = "Recuperar Cuenta";
+      authModalSubtitle.textContent = "¿Olvidaste tu contraseña o usuario? Te enviamos los datos a tu correo.";
+      if (recoveryIdentifier) setTimeout(() => recoveryIdentifier.focus(), 50);
+    } else if (tabName === "reset") {
+      if (authTabs) authTabs.classList.add("hidden");
+      if (resetPasswordForm) resetPasswordForm.classList.remove("hidden");
+      authModalTitle.textContent = "Nueva Contraseña";
+      authModalSubtitle.textContent = "Define una nueva contraseña para recuperar el acceso a tu cuenta.";
+      if (newPasswordInput) setTimeout(() => newPasswordInput.focus(), 50);
     }
   }
 
@@ -1365,20 +1406,114 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(data.detail || "Error al registrar usuario.");
       }
 
-      // Guardar sesión automática
-      state.token = data.token;
-      state.user = data.user;
-      localStorage.setItem("linguaflow_token", data.token);
+      // Limpiar formulario de registro
+      registerForm.reset();
 
-      renderUserUI();
-      closeAuthModal();
-      showToast(data.message || "¡Cuenta creada exitosamente!", "success");
+      // Redirigir inmediatamente a inicio de sesión con el identificador listo
+      switchAuthTab("login");
+      loginIdentifier.value = username;
+      loginPassword.value = "";
+
+      showToast(data.message || "¡Cuenta creada exitosamente! Revisa tu correo de bienvenida e inicia sesión.", "success");
+      showAuthAlert("¡Cuenta creada exitosamente! Te hemos enviado un correo de bienvenida a " + email + ". Por favor inicia sesión con tu contraseña.");
+      setTimeout(() => loginPassword.focus(), 80);
 
     } catch (err) {
       showAuthAlert(err.message || "Error al registrar cuenta.");
     } finally {
       registerSubmitBtn.disabled = false;
       btnText.textContent = "Crear Cuenta Gratuita";
+      btnSpinner.classList.add("hidden");
+    }
+  }
+
+  // Solicitud de recuperación de contraseña / usuario
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    hideAuthAlert();
+
+    const identifier = recoveryIdentifier.value.trim();
+    if (!identifier) {
+      showAuthAlert("Por favor ingresa tu usuario o correo electrónico.");
+      return;
+    }
+
+    const btnText = recoverySubmitBtn.querySelector(".btn-text");
+    const btnSpinner = recoverySubmitBtn.querySelector(".btn-spinner");
+    recoverySubmitBtn.disabled = true;
+    btnText.textContent = "Enviando correo...";
+    btnSpinner.classList.remove("hidden");
+
+    try {
+      const resp = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier })
+      });
+
+      const data = await resp.json();
+      showToast("Solicitud enviada. Revisa tu correo electrónico.", "info");
+      showAuthAlert(data.message || "Si la cuenta existe, hemos enviado un correo con las instrucciones de acceso.");
+      recoveryIdentifier.value = "";
+    } catch (err) {
+      showAuthAlert("Error al conectar con el servidor. Intenta de nuevo.");
+    } finally {
+      recoverySubmitBtn.disabled = false;
+      btnText.textContent = "Enviar Correo de Recuperación";
+      btnSpinner.classList.add("hidden");
+    }
+  }
+
+  // Restablecer contraseña mediante token
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    hideAuthAlert();
+
+    const token = resetTokenInput.value.trim();
+    const newPassword = newPasswordInput.value;
+    const confirmPassword = confirmNewPasswordInput.value;
+
+    if (!token) {
+      showAuthAlert("El código o enlace de recuperación no es válido.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showAuthAlert("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showAuthAlert("Las contraseñas no coinciden. Por favor verifícalas.");
+      return;
+    }
+
+    const btnText = resetPasswordSubmitBtn.querySelector(".btn-text");
+    const btnSpinner = resetPasswordSubmitBtn.querySelector(".btn-spinner");
+    resetPasswordSubmitBtn.disabled = true;
+    btnText.textContent = "Guardando...";
+    btnSpinner.classList.remove("hidden");
+
+    try {
+      const resp = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token, new_password: newPassword })
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.detail || "Error al restablecer contraseña.");
+      }
+
+      showToast("¡Contraseña restablecida con éxito!", "success");
+      switchAuthTab("login");
+      showAuthAlert("¡Contraseña actualizada con éxito! Ya puedes iniciar sesión con tu nueva contraseña.");
+    } catch (err) {
+      showAuthAlert(err.message || "Error al restablecer contraseña.");
+    } finally {
+      resetPasswordSubmitBtn.disabled = false;
+      btnText.textContent = "Guardar Nueva Contraseña";
       btnSpinner.classList.add("hidden");
     }
   }
@@ -1462,6 +1597,47 @@ document.addEventListener("DOMContentLoaded", () => {
   registerForm.addEventListener("submit", handleRegister);
   logoutBtn.addEventListener("click", handleLogout);
 
+  // Eventos de Recuperación de Cuenta y Contraseña
+  if (linkForgotPassword) {
+    linkForgotPassword.addEventListener("click", () => switchAuthTab("forgot"));
+  }
+  if (linkForgotFromRegister) {
+    linkForgotFromRegister.addEventListener("click", () => switchAuthTab("forgot"));
+  }
+  if (linkBackToLogin) {
+    linkBackToLogin.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchAuthTab("login");
+    });
+  }
+  if (linkCancelReset) {
+    linkCancelReset.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchAuthTab("login");
+    });
+  }
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener("submit", handleForgotPassword);
+  }
+  if (resetPasswordForm) {
+    resetPasswordForm.addEventListener("submit", handleResetPassword);
+  }
+
+  // Detección de token de reseteo en la URL (?reset_token=xyz)
+  function checkUrlForResetToken() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("reset_token");
+      if (token) {
+        openAuthModal("reset");
+        if (resetTokenInput) resetTokenInput.value = token;
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (e) {
+      console.warn("Aviso al leer parámetros de URL:", e);
+    }
+  }
+
   // Apertura de modal de acceso desde banners y gates bloqueados
   if (guestBannerAuthBtn) {
     guestBannerAuthBtn.addEventListener("click", () => openAuthModal("login"));
@@ -1500,6 +1676,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Arranque Inicial
   // ==========================================
   checkAuthStatus();
+  checkUrlForResetToken();
   loadSupportedLanguages();
   initWebSocket();
 });

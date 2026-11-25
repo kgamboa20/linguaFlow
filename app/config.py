@@ -18,6 +18,21 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     # Normalización para compatibilidad con librerías modernas de Python
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Configuración de Amazon Translate
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+
+# Configuración de Correo Electrónico (SMTP)
+SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM_EMAIL = os.environ.get("SMTP_FROM_EMAIL", "no-reply@linguaflow.com")
+SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "LinguaFlow")
+SMTP_TLS = os.environ.get("SMTP_TLS", "true").lower() in ("true", "1", "yes")
+APP_URL = os.environ.get("APP_URL", "http://localhost:8000")
+
 # Asegurar existencia del directorio de uploads
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

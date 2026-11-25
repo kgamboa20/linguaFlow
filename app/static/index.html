@@ -70,6 +70,7 @@
             <button class="user-profile-btn" id="userProfileBtn" title="Menú de usuario" type="button">
               <div class="user-avatar" id="userAvatarInitial">U</div>
               <span class="user-name" id="userDisplayName">Usuario</span>
+              <span class="user-online-dot" id="userOnlineDot" title="Sesión activa"></span>
               <svg class="dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -96,10 +97,6 @@
           </div>
         </div>
 
-        <div class="ws-status" id="wsStatusBadge" title="Estado de la conexión en tiempo real">
-          <span class="status-dot"></span>
-          <span class="status-text">Tiempo Real</span>
-        </div>
         <button class="icon-btn theme-toggle" id="themeToggleBtn" title="Cambiar tema">
           <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -695,6 +692,10 @@
           </div>
         </div>
 
+        <div class="form-helper-row">
+          <button type="button" class="btn-link-forgot" id="linkForgotPassword">¿Olvidaste tu contraseña o usuario?</button>
+        </div>
+
         <button type="submit" class="btn-auth-submit" id="loginSubmitBtn">
           <span class="btn-text">Iniciar Sesión</span>
           <span class="btn-spinner hidden"></span>
@@ -774,6 +775,76 @@
 
         <p class="auth-switch-text">
           ¿Ya tienes una cuenta? <a href="#" id="linkSwitchToLogin">Iniciar sesión</a>
+        </p>
+        <p class="auth-extra-help">
+          <button type="button" class="btn-link-forgot" id="linkForgotFromRegister">¿Olvidaste tu contraseña o usuario?</button>
+        </p>
+      </form>
+
+      <!-- FORMULARIO 3: RECUPERAR CONTRASEÑA O USUARIO -->
+      <form class="auth-form hidden" id="forgotPasswordForm">
+        <div class="recovery-intro">
+          <p>Ingresa tu <strong>correo electrónico</strong> o tu <strong>nombre de usuario</strong> registrado. Te enviaremos un correo con tu usuario y el enlace seguro para restablecer tu contraseña.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="recoveryIdentifier">Usuario o Correo Electrónico</label>
+          <div class="input-with-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <input type="text" id="recoveryIdentifier" placeholder="Ej: juanperez o juan@correo.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="recoverySubmitBtn">
+          <span class="btn-text">Enviar Correo de Recuperación</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <p class="auth-switch-text">
+          ¿Recordaste tus datos? <a href="#" id="linkBackToLogin">Volver a iniciar sesión</a>
+        </p>
+      </form>
+
+      <!-- FORMULARIO 4: RESTABLECER CONTRASEÑA (CON TOKEN) -->
+      <form class="auth-form hidden" id="resetPasswordForm">
+        <div class="recovery-intro">
+          <p>Ingresa tu nueva contraseña para completar el restablecimiento de tu cuenta.</p>
+        </div>
+
+        <input type="hidden" id="resetTokenInput">
+
+        <div class="form-group">
+          <label for="newPasswordInput">Nueva Contraseña</label>
+          <div class="input-with-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input type="password" id="newPasswordInput" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmNewPasswordInput">Confirmar Nueva Contraseña</label>
+          <div class="input-with-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input type="password" id="confirmNewPasswordInput" placeholder="Repite la nueva contraseña" minlength="6" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="resetPasswordSubmitBtn">
+          <span class="btn-text">Guardar Nueva Contraseña</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <p class="auth-switch-text">
+          <a href="#" id="linkCancelReset">Cancelar y volver a iniciar sesión</a>
         </p>
       </form>
     </div>
