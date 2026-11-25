@@ -44,40 +44,51 @@ class TranslationService:
 
         # Inicialización de Amazon Translate (Motor principal)
         self.amazon_client = None
-        if BOTO3_AVAILABLE:
+        aws_key = (AWS_ACCESS_KEY_ID or "").strip()
+        aws_secret = (AWS_SECRET_ACCESS_KEY or "").strip()
+        if BOTO3_AVAILABLE and aws_key and aws_secret:
             try:
-                boto_config = BotoConfig(connect_timeout=4, read_timeout=6, retries={'max_attempts': 2})
-                if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-                    self.amazon_client = boto3.client(
-                        "translate",
-                        aws_access_key_id=AWS_ACCESS_KEY_ID,
-                        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                        region_name=AWS_REGION,
-                        config=boto_config
-                    )
-                    logger.info("Motor Amazon Translate configurado con credenciales AWS en región %s.", AWS_REGION)
-                else:
-                    self.amazon_client = boto3.client("translate", region_name=AWS_REGION, config=boto_config)
-                    logger.info("Motor Amazon Translate inicializado con credenciales de entorno AWS (%s).", AWS_REGION)
+                boto_config = BotoConfig(connect_timeout=3, read_timeout=4, retries={'max_attempts': 1})
+                self.amazon_client = boto3.client(
+                    "translate",
+                    aws_access_key_id=aws_key,
+                    aws_secret_access_key=aws_secret,
+                    region_name=AWS_REGION,
+                    config=boto_config
+                )
+                logger.info("Motor Amazon Translate configurado con credenciales AWS en región %s.", AWS_REGION)
             except Exception as e:
+                self.amazon_client = None
                 logger.warning("No se pudo iniciar cliente Amazon Translate: %s. Se usarán motores secundarios.", e)
+        else:
+            logger.info("Amazon Translate en modo pasivo (sin credenciales AWS explícitas). Motores secundarios activos.")
 
     def _translate_with_amazon(self, text: str, source_lang: str, target_lang: str) -> Optional[Tuple[str, str]]:
         """Traduce usando Amazon Translate como motor principal oficial."""
         if not self.amazon_client:
             return None
 
-        src = "auto" if source_lang == "auto" else source_lang
+        src = source_lang
+        if src == "auto":
+            src = self.detect_language(text)
+
         tgt = target_lang
+
+        # Si el idioma origen y destino son iguales, Amazon Translate arroja ValidationException
+        if src == tgt:
+            return text, src
+
+        amazon_src = "zh" if src in ("zh", "zh-CN") else src
+        amazon_tgt = "zh" if tgt in ("zh", "zh-CN") else tgt
 
         try:
             response = self.amazon_client.translate_text(
                 Text=text,
-                SourceLanguageCode=src,
-                TargetLanguageCode=tgt
+                SourceLanguageCode=amazon_src,
+                TargetLanguageCode=amazon_tgt
             )
             translated = response.get("TranslatedText")
-            detected = response.get("SourceLanguageCode", src if src != "auto" else "es")
+            detected = response.get("SourceLanguageCode", src)
             if translated and translated.strip():
                 return translated, detected
         except Exception as e:
@@ -211,6 +222,15 @@ class TranslationService:
                 "translated_text": "",
                 "source_lang": source_lang,
                 "detected_lang": source_lang if source_lang != "auto" else "es",
+                "target_lang": target_lang
+            }
+
+        # Si el idioma origen y destino son idénticos y no auto, retornar sin llamadas de red
+        if source_lang != "auto" and source_lang == target_lang:
+            return {
+                "translated_text": text,
+                "source_lang": source_lang,
+                "detected_lang": source_lang,
                 "target_lang": target_lang
             }
 

@@ -294,8 +294,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       state.ws.onopen = () => {
         state.wsConnected = true;
-        wsStatusBadge.classList.remove("disconnected");
-        wsStatusBadge.querySelector(".status-text").textContent = "Tiempo Real";
+        if (wsStatusBadge) {
+          wsStatusBadge.classList.remove("disconnected");
+          const st = wsStatusBadge.querySelector(".status-text");
+          if (st) st.textContent = "Tiempo Real";
+        }
       };
 
       state.ws.onmessage = (event) => {
@@ -330,8 +333,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       state.ws.onclose = () => {
         state.wsConnected = false;
-        wsStatusBadge.classList.add("disconnected");
-        wsStatusBadge.querySelector(".status-text").textContent = "Reconectando...";
+        if (wsStatusBadge) {
+          wsStatusBadge.classList.add("disconnected");
+          const st = wsStatusBadge.querySelector(".status-text");
+          if (st) st.textContent = "Reconectando...";
+        }
         setTimeout(initWebSocket, 3000); // Intento de reconexión
       };
 
