@@ -1,37 +1,43 @@
 # LinguaFlow 🌐⚡
-> **Traductor Inteligente Multimodal en Tiempo Real**  
-> Desarrollado con FastAPI, WebSockets, Deep Translator, Edge Neural TTS, Speech-to-Text y Procesamiento de Documentos.
+> **Plataforma de Traducción Multimodal en Tiempo Real & LinguaAcademy**  
+> Desarrollado con FastAPI, WebSockets, Amazon Translate, Edge Neural TTS, Autenticación Segura y Procesamiento de Documentos.
 
 ---
 
 ## 🚀 Características Principales
 
-1. **Texto a Texto en Tiempo Real**:
-   - Traducción instantánea mientras el usuario escribe mediante **WebSockets** y debounce inteligente.
-   - Detección automática del idioma de origen.
-   - Conmutación rápida entre múltiples idiomas y atajos con un solo clic.
+1. **Traducción con Amazon Translate**:
+   - Integración oficial con **Amazon Translate (AWS)** como motor principal de alta precisión.
+   - Rotación y respaldo automático a motores multi-proveedor de alta disponibilidad.
+   - Detección automática del idioma de origen y soporte para más de 18 idiomas.
 
-2. **Audio a Texto (Speech-to-Text)**:
-   - Captura continua de la voz del micrófono en tiempo real.
-   - Transcripción instantánea en pantalla y traducción simultánea.
-   - Soporte para Web Speech API en el navegador y endpoints en backend con Python SpeechRecognition.
+2. **Control de Acceso y Modo Invitado**:
+   - **Invitados:** Traducción de texto libre limitada a 150 caracteres.
+   - **Usuarios Registrados:** Traducción de texto ilimitada, voz en vivo, documentos y academia.
+   - Indicador visual con **punto verde** de sesión activa al lado del nombre de usuario.
 
-3. **Texto a Audio (Text-to-Speech)**:
+3. **Sistema de Cuentas y Correos Automatizados**:
+   - Registro seguro con contraseñas cifradas con salt criptográfico (PBKDF2-HMAC-SHA256).
+   - **Correo de bienvenida** enviado automáticamente al crear una cuenta.
+   - Flujo de bienvenida que redirige al usuario a iniciar sesión con sus credenciales.
+   - **Recuperación de cuenta:** Envío de correo con nombre de usuario y enlace seguro para restablecer contraseña en caso de olvido.
+
+4. **Audio a Texto y Síntesis Neuronal (STT & TTS)**:
+   - Captura continua de voz por micrófono en tiempo real.
    - Síntesis de voz neuronal de alta fidelidad con **Edge TTS** (Microsoft Neural Voices) y fallback a **gTTS**.
-   - Pronunciación fluida, con acento natural en español, inglés, francés, alemán, japonés, etc.
-   - Modo "Auto-reproducir" para conversaciones fluidas en vivo.
 
-4. **Traducción Integral de Documentos**:
+5. **Traducción Integral de Documentos**:
    - Subida por arrastrar y soltar (Drag & Drop) de archivos **PDF**, **Word (.docx)** y **Texto (.txt)**.
-   - Extracción de texto respetando párrafos y estructura de contexto.
    - Generación automática del archivo traducido listo para descargar (`.docx` / `.txt`).
 
-5. **Academia y Capacitaciones de Idiomas (LinguaAcademy)**:
-   - Módulos interactivos tipo clases para aprender cualquiera de los 18 idiomas soportados.
-   - Tarjetas de vocabulario con pronunciación fonética y audio neuronal nativo.
-   - Práctica de pronunciación por micrófono con evaluación de similitud en tiempo real.
-   - Evaluaciones interactivas (Quizzes) con retroalimentación pedagógica instantánea.
-   - Generador de clases personalizadas sobre cualquier tema a medida.
+6. **Academia y Capacitaciones de Idiomas (LinguaAcademy)**:
+   - Módulos interactivos estructurados para aprender idiomas.
+   - Práctica de pronunciación por micrófono con evaluación de precisión.
+   - Evaluaciones interactivas (Quizzes) y generador de clases personalizadas por tema.
+
+7. **Base de Datos Dual (Producción & Local)**:
+   - Soporte automático para **PostgreSQL en la nube** (Render, Supabase, Neon) mediante `DATABASE_URL`.
+   - Fallback transparente a **SQLite local** (`linguaflow.db`) para desarrollo.
 
 ---
 
