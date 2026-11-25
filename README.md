@@ -1,15 +1,15 @@
 # LinguaFlow 🌐⚡
 > **Plataforma de Traducción Multimodal en Tiempo Real & LinguaAcademy**  
-> Desarrollado con FastAPI, WebSockets, Amazon Translate, Edge Neural TTS, Autenticación Segura y Procesamiento de Documentos.
+> Desarrollado con FastAPI, WebSockets, Microsoft Translator (Azure Cognitive Services), Edge Neural TTS, Autenticación Segura y Procesamiento de Documentos.
 
 ---
 
 ## 🚀 Características Principales
 
-1. **Traducción con Amazon Translate**:
-   - Integración oficial con **Amazon Translate (AWS)** como motor principal de alta precisión.
-   - Rotación y respaldo automático a motores multi-proveedor de alta disponibilidad.
-   - Detección automática del idioma de origen y soporte para más de 18 idiomas.
+1. **Traducción con Microsoft Translator (Azure)**:
+   - Integración oficial con **Microsoft Translator (Azure AI Translator / Cognitive Services)** como motor principal de alta precisión.
+   - Rotación y respaldo automático transparente a matriz multi-proveedor de alta disponibilidad.
+   - Detección automática nativa del idioma de origen y soporte integral para más de 18 idiomas.
 
 2. **Control de Acceso y Modo Invitado**:
    - **Invitados:** Traducción de texto libre limitada a 150 caracteres.
@@ -135,6 +135,24 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - **Aplicación Web:** Abre tu navegador en [http://localhost:8000](http://localhost:8000)
 - **Documentación Interactiva (Swagger/OpenAPI):** [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Especificación Redoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+---
+
+## 🔐 Variables de Entorno (Producción / Render)
+
+Configura las siguientes variables en el panel de **Render** o en un archivo `.env`:
+
+| Variable | Descripción | Valor por Defecto / Ejemplo |
+|---|---|---|
+| `AZURE_TRANSLATOR_KEY` | Clave de suscripción de Azure Translator (Cognitive Services) | `tu-azure-key` |
+| `AZURE_TRANSLATOR_REGION` | Región del recurso de Azure Translator | `global`, `eastus`, `brazilsouth`, etc. |
+| `AZURE_TRANSLATOR_ENDPOINT` | Endpoint de Azure Translator | `https://api.cognitive.microsofttranslator.com` |
+| `DATABASE_URL` | Conexión PostgreSQL en la nube | `postgresql://user:pass@host/dbname` |
+| `SMTP_HOST` | Host SMTP para envío de correos (bienvenida y recuperación) | `smtp.gmail.com` |
+| `SMTP_PORT` | Puerto SMTP | `587` |
+| `SMTP_USER` | Usuario o correo emisor SMTP | `tu-correo@gmail.com` |
+| `SMTP_PASSWORD` | Contraseña o App Password de la cuenta SMTP | `tu-contraseña-o-app-token` |
+| `APP_URL` | URL pública de la aplicación para enlaces de recuperación | `https://linguaflow.onrender.com` |
 
 ---
 

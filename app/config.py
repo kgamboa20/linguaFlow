@@ -18,10 +18,10 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     # Normalización para compatibilidad con librerías modernas de Python
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Configuración de Amazon Translate
-AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+# Configuración de Microsoft Translator (Azure AI Translator)
+AZURE_TRANSLATOR_KEY = os.environ.get("AZURE_TRANSLATOR_KEY", os.environ.get("TRANSLATOR_KEY", "")).strip()
+AZURE_TRANSLATOR_REGION = os.environ.get("AZURE_TRANSLATOR_REGION", os.environ.get("TRANSLATOR_REGION", "global")).strip()
+AZURE_TRANSLATOR_ENDPOINT = os.environ.get("AZURE_TRANSLATOR_ENDPOINT", "https://api.cognitive.microsofttranslator.com").strip().rstrip("/")
 
 # Configuración de Correo Electrónico (SMTP)
 SMTP_HOST = os.environ.get("SMTP_HOST", "")

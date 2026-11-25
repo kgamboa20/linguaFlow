@@ -3,24 +3,38 @@ import logging
 from typing import Dict, Any, List, Tuple, Optional
 import requests
 from langdetect import detect, DetectorFactory
-from app.config import SUPPORTED_LANGUAGES, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
-
-# Importación condicional de boto3 para Amazon Translate
-try:
-    import boto3
-    from botocore.config import Config as BotoConfig
-    BOTO3_AVAILABLE = True
-except ImportError:
-    BOTO3_AVAILABLE = False
+from app.config import (
+    SUPPORTED_LANGUAGES,
+    AZURE_TRANSLATOR_KEY,
+    AZURE_TRANSLATOR_REGION,
+    AZURE_TRANSLATOR_ENDPOINT
+)
 
 # Reproducibilidad en detección de idioma
 DetectorFactory.seed = 0
 logger = logging.getLogger("linguaflow.translation")
 
-# Mapeo de códigos ISO
+# Mapeo de códigos ISO generales
 LANG_MAP = {
     "zh": "zh-CN",
     "auto": "auto"
+}
+
+# Mapeo de códigos ISO para Microsoft Translator (Azure)
+LANG_MAP_AZURE = {
+    "zh": "zh-Hans",
+    "zh-CN": "zh-Hans"
+}
+
+# Mapeo inverso de detección de Azure a códigos internos
+REVERSE_LANG_MAP_AZURE = {
+    "zh-hans": "zh",
+    "zh-hant": "zh",
+    "pt-pt": "pt",
+    "pt-br": "pt",
+    "en-us": "en",
+    "en-gb": "en",
+    "es-es": "es"
 }
 
 # Mapeo para MyMemory
@@ -42,58 +56,76 @@ class TranslationService:
             "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
         })
 
-        # Inicialización de Amazon Translate (Motor principal)
-        self.amazon_client = None
-        aws_key = (AWS_ACCESS_KEY_ID or "").strip()
-        aws_secret = (AWS_SECRET_ACCESS_KEY or "").strip()
-        if BOTO3_AVAILABLE and aws_key and aws_secret:
-            try:
-                boto_config = BotoConfig(connect_timeout=3, read_timeout=4, retries={'max_attempts': 1})
-                self.amazon_client = boto3.client(
-                    "translate",
-                    aws_access_key_id=aws_key,
-                    aws_secret_access_key=aws_secret,
-                    region_name=AWS_REGION,
-                    config=boto_config
-                )
-                logger.info("Motor Amazon Translate configurado con credenciales AWS en región %s.", AWS_REGION)
-            except Exception as e:
-                self.amazon_client = None
-                logger.warning("No se pudo iniciar cliente Amazon Translate: %s. Se usarán motores secundarios.", e)
-        else:
-            logger.info("Amazon Translate en modo pasivo (sin credenciales AWS explícitas). Motores secundarios activos.")
+        # Configuración de Microsoft Translator (Azure Cognitive Services - Motor principal)
+        self.azure_key = (AZURE_TRANSLATOR_KEY or "").strip()
+        self.azure_region = (AZURE_TRANSLATOR_REGION or "global").strip()
+        self.azure_endpoint = (AZURE_TRANSLATOR_ENDPOINT or "https://api.cognitive.microsofttranslator.com").strip().rstrip("/")
 
-    def _translate_with_amazon(self, text: str, source_lang: str, target_lang: str) -> Optional[Tuple[str, str]]:
-        """Traduce usando Amazon Translate como motor principal oficial."""
-        if not self.amazon_client:
+        if self.azure_key:
+            logger.info("Motor Microsoft Translator (Azure) activo (Región: %s, Endpoint: %s).", self.azure_region, self.azure_endpoint)
+        else:
+            logger.info("Microsoft Translator (Azure) en modo pasivo (sin AZURE_TRANSLATOR_KEY). Motores secundarios activos.")
+
+    def _translate_with_azure(self, text: str, source_lang: str, target_lang: str) -> Optional[Tuple[str, str]]:
+        """Traduce usando Microsoft Translator (Azure) como motor principal oficial."""
+        if not self.azure_key:
             return None
 
-        src = source_lang
-        if src == "auto":
-            src = self.detect_language(text)
+        tgt = LANG_MAP_AZURE.get(target_lang, target_lang)
 
-        tgt = target_lang
+        # Si el idioma origen está definido y no es auto
+        src = None
+        if source_lang and source_lang != "auto":
+            src = LANG_MAP_AZURE.get(source_lang, source_lang)
+            if src == tgt:
+                return text, source_lang
 
-        # Si el idioma origen y destino son iguales, Amazon Translate arroja ValidationException
-        if src == tgt:
-            return text, src
+        # Construir endpoint y parámetros de Azure Translator v3.0
+        url = f"{self.azure_endpoint}/translate"
+        params = {
+            "api-version": "3.0",
+            "to": tgt
+        }
+        if src:
+            params["from"] = src
 
-        amazon_src = "zh" if src in ("zh", "zh-CN") else src
-        amazon_tgt = "zh" if tgt in ("zh", "zh-CN") else tgt
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.azure_key,
+            "Content-Type": "application/json; charset=UTF-8"
+        }
+        if self.azure_region and self.azure_region.lower() != "global":
+            headers["Ocp-Apim-Subscription-Region"] = self.azure_region
+
+        body = [{"Text": text}]
 
         try:
-            response = self.amazon_client.translate_text(
-                Text=text,
-                SourceLanguageCode=amazon_src,
-                TargetLanguageCode=amazon_tgt
-            )
-            translated = response.get("TranslatedText")
-            detected = response.get("SourceLanguageCode", src)
-            if translated and translated.strip():
-                return translated, detected
+            resp = self.session.post(url, params=params, headers=headers, json=body, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, list) and len(data) > 0:
+                    item = data[0]
+                    translations = item.get("translations", [])
+                    if translations and len(translations) > 0:
+                        translated_text = translations[0].get("text", "")
+
+                        # Idioma detectado automáticamente por Azure si fue auto
+                        detected = source_lang if source_lang != "auto" else "es"
+                        if "detectedLanguage" in item:
+                            detected_azure = item["detectedLanguage"].get("language", "")
+                            detected = REVERSE_LANG_MAP_AZURE.get(detected_azure.lower(), detected_azure)
+
+                        if translated_text and translated_text.strip():
+                            return translated_text, detected
+            else:
+                logger.warning(
+                    "Azure Translator devolvió estado %s: %s. Alternando automáticamente a motores de respaldo.",
+                    resp.status_code, resp.text[:120]
+                )
+                return None
         except Exception as e:
-            logger.warning("Aviso en Amazon Translate (%s). Alternando automáticamente a motores de respaldo.", e)
+            logger.warning("Error de conexión con Microsoft Translator Azure (%s). Alternando a motores de respaldo.", e)
             return None
+
         return None
 
     def detect_language(self, text: str) -> str:
@@ -243,10 +275,10 @@ class TranslationService:
                 translated_chunks.append(chunk)
                 continue
 
-            # 1. Intentar con Amazon Translate como motor principal
-            amazon_result = self._translate_with_amazon(chunk, source_lang, target_lang)
-            if amazon_result:
-                trans_part, det_part = amazon_result
+            # 1. Intentar con Microsoft Translator (Azure) como motor principal
+            azure_result = self._translate_with_azure(chunk, source_lang, target_lang)
+            if azure_result:
+                trans_part, det_part = azure_result
             else:
                 # 2. Respaldo a matriz de motores secundarios
                 trans_part, det_part = self._translate_with_engines(chunk, source_lang, target_lang)

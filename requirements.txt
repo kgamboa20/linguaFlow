@@ -11,8 +11,8 @@ httpx>=0.27.0
 # Base de Datos en Producción (PostgreSQL)
 psycopg2-binary>=2.9.9
 
-# Traducción y Detección de Idioma
-boto3>=1.34.0
+# Traducción y Detección de Idioma (Microsoft Translator API & Multi-Engine)
+requests>=2.31.0
 deep-translator>=1.11.4
 langdetect>=1.0.9
 
